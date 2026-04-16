@@ -1,0 +1,680 @@
+import cors from "@fastify/cors";
+import Fastify from "fastify";
+import { timingSafeEqual } from "node:crypto";
+import { parseAssistantEvidence } from "@ibobs/evidence-parser";
+import { evaluatePolicy } from "@ibobs/policy-engine";
+import {
+  ACTION_TYPES,
+  BLAST_RADIUS,
+  BUSINESS_TRANSACTIONS,
+  POLICY_MODES,
+  getIncident,
+  listIncidents,
+  listWebhookReceipts,
+  saveIncident,
+  saveWebhookReceipt,
+  type AssistantEvidenceInput,
+  type DetectorWebhookPayload,
+  type EvidenceBundle,
+  type ProposedAction,
+  type WebhookReceipt
+} from "@ibobs/shared-types";
+import {
+  annotateServerEntrySpan,
+  annotateCurrentSpan,
+  buildNodeTelemetryConfig,
+  createServiceLogger,
+  initSplunkNodeTelemetry,
+  recordActionProposed,
+  recordAffectedSessions,
+  recordAffectedTransactionsCount,
+  recordFrustrationSignals,
+  recordIncidentOpened,
+  recordPolicyDecision,
+  recordRemediationDuration,
+  recordSessionReplayCandidate,
+  recordSuspectDependency,
+  recordValidationFailed,
+  runInSpan
+} from "@ibobs/telemetry";
+import { RemediationAgentClient } from "./agent-client";
+import { SplunkObservabilityClient } from "./splunk-client";
+
+async function buildEvidenceBundle(
+  input: AssistantEvidenceInput,
+  splunkClient: SplunkObservabilityClient
+): Promise<EvidenceBundle> {
+  const parsed = parseAssistantEvidence(input);
+  const existingIncident = input.incidentId ? getIncident(input.incidentId) : undefined;
+  const matchingReceipt = input.incidentId
+    ? listWebhookReceipts().find((receipt) => receipt.incidentId === input.incidentId)
+    : undefined;
+  const detectorPayload: DetectorWebhookPayload = {
+    detectorId:
+      input.detectorId ??
+      existingIncident?.detectorId ??
+      matchingReceipt?.detectorId ??
+      "detector-demo-001",
+    detectorName:
+      existingIncident?.detectorName ??
+      matchingReceipt?.detectorName ??
+      "Customer Support Response Latency",
+    severity: "critical",
+    triggeredAt: new Date().toISOString(),
+    incidentId: input.incidentId,
+    dimensions: {
+      service: "support-portal-api",
+      environment: "demo"
+    }
+  };
+  const enrichment = await splunkClient.enrichDetector(detectorPayload);
+
+  return {
+    incidentId: input.incidentId ?? "incident-demo-001",
+    scenarioId: "dependency-latency",
+    detector: {
+      detectorId: detectorPayload.detectorId,
+      detectorName: detectorPayload.detectorName,
+      severity: detectorPayload.severity,
+      triggeredAt: detectorPayload.triggeredAt,
+      dimensions: detectorPayload.dimensions ?? {}
+    },
+    browserExperience: {
+      affectedSessions: enrichment.affectedSessions,
+      frustrationSignals: ["rage_click", "error_click"],
+      sessionReplayUrl: enrichment.sessionReplayUrl,
+      affectedJourney: BUSINESS_TRANSACTIONS.customerSupportResponse
+    },
+    serviceImpact: {
+      affectedServices: enrichment.affectedServices,
+      suspectService: enrichment.suspectService,
+      p95LatencyMs: enrichment.p95LatencyMs,
+      errorRate: enrichment.errorRate,
+      affectedTransactions:
+        (enrichment.affectedTransactions as EvidenceBundle["serviceImpact"]["affectedTransactions"] | undefined) ??
+        [BUSINESS_TRANSACTIONS.customerSupportResponse]
+    },
+    investigation: {
+      likelyCause: parsed.likelyCause,
+      recentChange: enrichment.recentChange,
+      confidenceBand: parsed.confidenceBand,
+      blastRadius: parsed.blastRadius ?? BLAST_RADIUS.medium
+    },
+    candidateActions: parsed.candidateActions as (typeof ACTION_TYPES)[keyof typeof ACTION_TYPES][],
+    sourceNotes: {
+      assistantSummary: input.rawText,
+      enrichmentApplied: enrichment.apiBacked,
+      apiEnrichmentSources: enrichment.sources,
+      enrichmentWarnings: enrichment.warnings
+    }
+  };
+}
+
+function normalizeAssistantInput(input: AssistantEvidenceInput): AssistantEvidenceInput {
+  return {
+    source: input.source ?? "splunk_ai_assistant",
+    rawText: input.rawText ?? input.assistantResponseText ?? "",
+    pastedBy: input.pastedBy ?? "operator",
+    pastedAt: input.pastedAt ?? new Date().toISOString(),
+    detectorId: input.detectorId,
+    incidentId: input.incidentId
+  };
+}
+
+async function intakeAssistantEvidence(
+  input: AssistantEvidenceInput,
+  splunkClient: SplunkObservabilityClient
+) {
+  const normalizedInput = normalizeAssistantInput(input);
+  const evidence = await buildEvidenceBundle(normalizedInput, splunkClient);
+  const policy = evaluatePolicy(evidence);
+
+  return {
+    evidence,
+    policy
+  };
+}
+
+function buildIncidentFromWebhook(payload: DetectorWebhookPayload) {
+  const incidentId = payload.incidentId ?? `incident-${Date.now()}`;
+
+  return saveIncident({
+    incidentId,
+    scenarioId: "dependency-latency",
+    businessTransaction: BUSINESS_TRANSACTIONS.customerSupportResponse,
+    blastRadius: BLAST_RADIUS.medium,
+    detectorId: payload.detectorId,
+    detectorName: payload.detectorName,
+    status: "open"
+  });
+}
+
+function normalizeSeverity(value: unknown): DetectorWebhookPayload["severity"] {
+  const normalized = typeof value === "string" ? value.toLowerCase() : "";
+  if (normalized === "info" || normalized === "warning" || normalized === "critical") {
+    return normalized;
+  }
+  if (normalized === "major" || normalized === "minor") {
+    return "warning";
+  }
+  return "critical";
+}
+
+function normalizeDetectorWebhookPayload(input: unknown): DetectorWebhookPayload {
+  const payload = (input ?? {}) as Record<string, unknown>;
+  const detectorId =
+    (typeof payload.detectorId === "string" && payload.detectorId) ||
+    (typeof payload.detector_id === "string" && payload.detector_id) ||
+    (typeof payload.incidentId === "string" && payload.incidentId) ||
+    `detector-${Date.now()}`;
+  const detectorName =
+    (typeof payload.detectorName === "string" && payload.detectorName) ||
+    (typeof payload.detector === "string" && payload.detector) ||
+    (typeof payload.rule === "string" && payload.rule) ||
+    "Splunk Detector Alert";
+  const triggeredAt =
+    (typeof payload.triggeredAt === "string" && payload.triggeredAt) ||
+    (typeof payload.alertTimestamp === "string" && payload.alertTimestamp) ||
+    new Date().toISOString();
+  const incidentId =
+    (typeof payload.incidentId === "string" && payload.incidentId) ||
+    (typeof payload.eventType === "string" && payload.eventType) ||
+    undefined;
+
+  const dimensions: Record<string, string> = {
+    service:
+      (typeof payload.service === "string" && payload.service) ||
+      (typeof payload["service.name"] === "string" && (payload["service.name"] as string)) ||
+      "support-portal-api",
+    environment:
+      (typeof payload.environment === "string" && payload.environment) ||
+      (typeof payload["deployment.environment"] === "string" && (payload["deployment.environment"] as string)) ||
+      "demo"
+  };
+
+  return {
+    detectorId,
+    detectorName,
+    severity: normalizeSeverity(payload.severity),
+    triggeredAt,
+    incidentId,
+    dimensions
+  };
+}
+
+function buildWebhookReceipt(input: unknown, payload: DetectorWebhookPayload, sourceHost?: string): WebhookReceipt {
+  const raw = (input ?? {}) as Record<string, unknown>;
+
+  return {
+    receiptId: `receipt-${Date.now()}`,
+    receivedAt: new Date().toISOString(),
+    sourceHost,
+    detectorId: payload.detectorId,
+    detectorName: payload.detectorName,
+    incidentId: payload.incidentId,
+    severity: payload.severity,
+    triggeredAt: payload.triggeredAt,
+    eventType: typeof raw.eventType === "string" ? raw.eventType : undefined,
+    status: typeof raw.status === "string" ? raw.status : undefined,
+    dimensions: payload.dimensions
+  };
+}
+
+function isValidWebhookSecret(providedSecret: string | undefined, configuredSecret: string) {
+  if (!providedSecret) {
+    return false;
+  }
+
+  const left = Buffer.from(providedSecret);
+  const right = Buffer.from(configuredSecret);
+
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return timingSafeEqual(left, right);
+}
+
+export function buildServer() {
+  const app = Fastify({ loggerInstance: createServiceLogger("remediation-orchestrator") });
+  void buildNodeTelemetryConfig({ serviceName: "remediation-orchestrator" });
+  void app.register(cors, {
+    origin: true,
+    allowedHeaders: ["content-type", "traceparent", "tracestate", "baggage", "x-ibobs-webhook-secret"],
+    exposedHeaders: ["Server-Timing"]
+  });
+  app.addHook("preHandler", async (request) => {
+    annotateServerEntrySpan({
+      method: request.method,
+      route: request.routeOptions.url
+    });
+    request.log.info(
+      {
+        http: { method: request.method, url: request.url },
+        params: request.params,
+        query: request.query,
+        body: request.body
+      },
+      "request received"
+    );
+  });
+  app.addHook("onResponse", async (request, reply) => {
+    request.log.info(
+      {
+        http: { method: request.method, url: request.url, status_code: reply.statusCode }
+      },
+      "request completed"
+    );
+  });
+  const splunkClient = new SplunkObservabilityClient(
+    process.env.SPLUNK_API_BASE_URL ?? "https://api.us1.signalfx.com",
+    process.env.SPLUNK_ACCESS_TOKEN ?? ""
+  );
+  const agentClient = new RemediationAgentClient(process.env.REMEDIATION_AGENT_BASE_URL ?? "http://127.0.0.1:8000");
+  const webhookSharedSecret = process.env.SPLUNK_WEBHOOK_SHARED_SECRET;
+
+  app.get("/remediation/health", async () => ({
+    status: "ok",
+    service: "remediation-orchestrator"
+  }));
+
+  app.get("/remediation/incidents", async () => listIncidents());
+
+  app.get("/remediation/webhook-receipts", async () => listWebhookReceipts());
+
+  app.get("/remediation/incidents/:incidentId", async (request, reply) => {
+    const incident = getIncident((request.params as { incidentId: string }).incidentId);
+    if (!incident) {
+      reply.code(404);
+      return { error: "Incident not found" };
+    }
+    return incident;
+  });
+
+  app.post("/webhooks/splunk/detector", async (request, reply) => {
+    if (webhookSharedSecret) {
+      const providedSecret = request.headers["x-ibobs-webhook-secret"];
+      const normalizedSecret =
+        typeof providedSecret === "string" ? providedSecret : Array.isArray(providedSecret) ? providedSecret[0] : undefined;
+
+      if (!isValidWebhookSecret(normalizedSecret, webhookSharedSecret)) {
+        reply.code(401);
+        return {
+          error: "Invalid webhook secret"
+        };
+      }
+    }
+
+    const payload = normalizeDetectorWebhookPayload(request.body);
+    const receipt = saveWebhookReceipt(
+      buildWebhookReceipt(
+        request.body,
+        payload,
+        typeof request.headers.host === "string" ? request.headers.host : undefined
+      )
+    );
+    request.log.info(
+      {
+        webhookReceipt: {
+          receiptId: receipt.receiptId,
+          detectorId: receipt.detectorId,
+          incidentId: receipt.incidentId,
+          eventType: receipt.eventType,
+          status: receipt.status
+        }
+      },
+      "webhook receipt recorded"
+    );
+    const incident = buildIncidentFromWebhook(payload);
+    const enrichment = await runInSpan(
+      "splunk.enrich_detector",
+      {
+        "incident.id": incident.incidentId,
+        "app.business_transaction": incident.businessTransaction,
+        "o11y.detector_id": payload.detectorId
+      },
+      () => splunkClient.enrichDetector(payload)
+    );
+    const metricAttrs = {
+      "deployment.environment": "demo",
+      "app.business_transaction": incident.businessTransaction,
+      incident_id: incident.incidentId
+    };
+    recordIncidentOpened(incident.blastRadius, metricAttrs);
+    if (enrichment.affectedSessions !== undefined) {
+      recordAffectedSessions(enrichment.affectedSessions, metricAttrs);
+    }
+    recordAffectedTransactionsCount(enrichment.affectedTransactions?.length ?? 1, metricAttrs);
+    if (enrichment.suspectService) {
+      recordSuspectDependency(enrichment.suspectService, metricAttrs);
+    }
+    recordFrustrationSignals(2, {
+      "deployment.environment": "demo",
+      journey: incident.businessTransaction
+    });
+    if (enrichment.sessionReplayUrl) {
+      recordSessionReplayCandidate(metricAttrs);
+    }
+
+    return {
+      incident,
+      enrichment
+    };
+  });
+
+  app.post("/remediation/context", async (request) => {
+    const payload = request.body as AssistantEvidenceInput;
+    request.log.info({ assistantEvidence: payload }, "building remediation context");
+    const existingIncident = payload.incidentId ? getIncident(payload.incidentId) : undefined;
+    const result = await runInSpan(
+      "remediation.context_build",
+      {
+        "incident.id": payload.incidentId ?? "incident-demo-001",
+        "app.business_transaction": BUSINESS_TRANSACTIONS.customerSupportResponse
+      },
+      () => intakeAssistantEvidence(payload, splunkClient)
+    );
+    const incident = saveIncident({
+      incidentId: result.evidence.incidentId,
+      scenarioId: result.evidence.scenarioId,
+      businessTransaction: result.evidence.browserExperience.affectedJourney,
+      blastRadius: result.evidence.investigation.blastRadius,
+      detectorId: existingIncident?.detectorId,
+      detectorName: existingIncident?.detectorName,
+      status: "proposed",
+      evidence: result.evidence
+    });
+
+    return {
+      incident,
+      policy: result.policy
+    };
+  });
+
+  app.post("/remediation/explain", async (request) => {
+    const payload = request.body as AssistantEvidenceInput;
+    request.log.info({ assistantEvidence: payload }, "explaining remediation evidence");
+    const { evidence } = await intakeAssistantEvidence(payload, splunkClient);
+    return splunkClient.explainEvidence(evidence);
+  });
+
+  app.post("/remediation/propose", async (request, reply) => {
+    const payload = request.body as AssistantEvidenceInput;
+    request.log.info({ assistantEvidence: payload }, "proposing remediation action");
+    const existingIncident = payload.incidentId ? getIncident(payload.incidentId) : undefined;
+
+    if ((!payload.rawText && !payload.assistantResponseText) && existingIncident?.evidence) {
+      const evidence = existingIncident.evidence;
+      const policy = evaluatePolicy(evidence);
+      annotateCurrentSpan({
+        "app.blast_radius": evidence.investigation.blastRadius,
+        "app.policy_mode": policy.policyMode,
+        "app.enrichment_applied": evidence.sourceNotes.enrichmentApplied
+      });
+      recordPolicyDecision(policy.policyMode, {
+        "deployment.environment": "demo",
+        "app.business_transaction": evidence.browserExperience.affectedJourney,
+        incident_id: evidence.incidentId
+      });
+
+      const proposedAction = await runInSpan(
+        "remediation.agent_evaluate",
+        {
+          "incident.id": evidence.incidentId,
+          "app.business_transaction": evidence.browserExperience.affectedJourney,
+          "app.policy_mode": policy.policyMode
+        },
+        () => agentClient.evaluate(evidence, policy.policyMode)
+      );
+      recordActionProposed(proposedAction.type, {
+        "deployment.environment": "demo",
+        "app.business_transaction": evidence.browserExperience.affectedJourney,
+        incident_id: evidence.incidentId
+      });
+
+      saveIncident({
+        incidentId: evidence.incidentId,
+        scenarioId: evidence.scenarioId,
+        businessTransaction: evidence.browserExperience.affectedJourney,
+        blastRadius: evidence.investigation.blastRadius,
+        detectorId: existingIncident.detectorId,
+        detectorName: existingIncident.detectorName,
+        status: "proposed",
+        evidence,
+        proposedAction
+      });
+
+      return {
+        proposedAction,
+        evidence,
+        policy
+      };
+    }
+
+    const result = await runInSpan(
+      "remediation.propose_action",
+      {
+        "incident.id": payload.incidentId ?? "incident-demo-001",
+        "app.business_transaction": BUSINESS_TRANSACTIONS.customerSupportResponse
+      },
+      () => intakeAssistantEvidence(payload, splunkClient)
+    );
+    annotateCurrentSpan({
+      "app.blast_radius": result.evidence.investigation.blastRadius,
+      "app.policy_mode": result.policy.policyMode,
+      "app.enrichment_applied": result.evidence.sourceNotes.enrichmentApplied
+    });
+    recordPolicyDecision(result.policy.policyMode, {
+      "deployment.environment": "demo",
+      "app.business_transaction": result.evidence.browserExperience.affectedJourney,
+      incident_id: result.evidence.incidentId
+    });
+
+    if (!result.policy.eligible && result.policy.policyMode === POLICY_MODES.recommendOnly) {
+      reply.code(202);
+      const fallbackAction: ProposedAction = {
+        actionId: `action-${Date.now()}`,
+        incidentId: result.evidence.incidentId,
+        type: result.evidence.candidateActions[0],
+        target: "support_knowledge_v2",
+        confidenceBand: result.evidence.investigation.confidenceBand,
+        policyMode: result.policy.policyMode,
+        reasoningSummary: "Policy limited this incident to recommendation-only handling.",
+        validationPlan: ["Escalate to operator review", "Confirm affected transaction remains isolated"],
+        status: "proposed"
+      };
+
+      saveIncident({
+        incidentId: result.evidence.incidentId,
+        scenarioId: result.evidence.scenarioId,
+        businessTransaction: result.evidence.browserExperience.affectedJourney,
+        blastRadius: result.evidence.investigation.blastRadius,
+        detectorId: existingIncident?.detectorId,
+        detectorName: existingIncident?.detectorName,
+        status: "proposed",
+        evidence: result.evidence,
+        proposedAction: fallbackAction
+      });
+
+      return {
+        proposedAction: fallbackAction,
+        evidence: result.evidence,
+        policy: result.policy
+      };
+    }
+
+    const proposedAction = await runInSpan(
+      "remediation.agent_evaluate",
+      {
+        "incident.id": result.evidence.incidentId,
+        "app.business_transaction": result.evidence.browserExperience.affectedJourney,
+        "app.policy_mode": result.policy.policyMode
+      },
+      () => agentClient.evaluate(result.evidence, result.policy.policyMode)
+    );
+    recordActionProposed(proposedAction.type, {
+      "deployment.environment": "demo",
+      "app.business_transaction": result.evidence.browserExperience.affectedJourney,
+      incident_id: result.evidence.incidentId
+    });
+
+    saveIncident({
+      incidentId: result.evidence.incidentId,
+      scenarioId: result.evidence.scenarioId,
+      businessTransaction: result.evidence.browserExperience.affectedJourney,
+      blastRadius: result.evidence.investigation.blastRadius,
+      detectorId: existingIncident?.detectorId,
+      detectorName: existingIncident?.detectorName,
+      status: "proposed",
+      evidence: result.evidence,
+      proposedAction
+    });
+
+    return {
+      proposedAction,
+      evidence: result.evidence,
+      policy: result.policy
+    };
+  });
+
+  app.post("/remediation/approve/:actionId", async (request, reply) => {
+    const actionId = (request.params as { actionId: string }).actionId;
+    const incidentId = (request.body as { incidentId?: string }).incidentId;
+    request.log.info({ actionId, incidentId }, "approving remediation action");
+    if (!incidentId) {
+      reply.code(400);
+      return { error: "incidentId is required" };
+    }
+
+    const incident = getIncident(incidentId);
+    if (!incident?.proposedAction) {
+      reply.code(404);
+      return { error: "Proposed action not found for incident" };
+    }
+
+    const approvedAt = new Date().toISOString();
+    const approvedAction: ProposedAction = {
+      ...incident.proposedAction,
+      status: "approved"
+    };
+    saveIncident({
+      ...incident,
+      status: "approved",
+      proposedAction: approvedAction,
+      approvedAt
+    });
+
+    const startedAt = performance.now();
+    saveIncident({
+      ...incident,
+      status: "executing",
+      proposedAction: approvedAction,
+      approvedAt
+    });
+    const executeResult = await runInSpan(
+      "remediation.execute_action",
+      {
+        "incident.id": incidentId,
+        "action.id": actionId,
+        "action.type": approvedAction.type
+      },
+      () => agentClient.execute(approvedAction)
+    );
+    const executedAt = new Date().toISOString();
+    const verifyResult =
+      executeResult.status === "executed"
+        ? await runInSpan(
+            "remediation.verify_action",
+            {
+              "incident.id": incidentId,
+              "action.id": actionId,
+              "action.type": approvedAction.type
+            },
+            () => agentClient.verify(approvedAction)
+          )
+        : {
+            actionId,
+            actionType: approvedAction.type,
+            status: "failed" as const,
+            scenarioState: executeResult.scenarioState ?? "unknown",
+            notes: ["Verification skipped because execution failed."]
+          };
+    const verifiedAt = new Date().toISOString();
+    const durationMs = performance.now() - startedAt;
+    recordRemediationDuration(durationMs, {
+      "deployment.environment": "demo",
+      "app.business_transaction": incident.businessTransaction,
+      "action.type": approvedAction.type
+    });
+    if (verifyResult.status !== "validated") {
+      recordValidationFailed({
+        "deployment.environment": "demo",
+        "app.business_transaction": incident.businessTransaction,
+        "action.type": approvedAction.type
+      });
+    }
+
+    const updatedAction: ProposedAction = {
+      ...approvedAction,
+      status:
+        verifyResult.status === "validated"
+          ? "validated"
+          : executeResult.status === "executed"
+            ? "executed"
+            : "rejected"
+    };
+
+    saveIncident({
+      ...incident,
+      status:
+        verifyResult.status === "validated"
+          ? "validated"
+          : executeResult.status === "executed"
+            ? "approved"
+            : "open",
+      proposedAction: updatedAction,
+      executeResult,
+      verifyResult,
+      approvedAt,
+      executedAt,
+      verifiedAt
+    });
+
+    return {
+      approved: true,
+      actionId,
+      incident: getIncident(incidentId),
+      executeResult,
+      verifyResult,
+      incidentId
+    };
+  });
+
+  app.get("/remediation/actions/:actionId", async (request) => {
+    const actionId = (request.params as { actionId: string }).actionId;
+    request.log.info({ actionId }, "fetching remediation action");
+    const actionOwner = listIncidents().find((incident) => incident.proposedAction?.actionId === actionId);
+    return actionOwner?.proposedAction ?? { actionId, status: "unknown" };
+  });
+
+  return app;
+}
+
+const demoInput: AssistantEvidenceInput = {
+  source: "splunk_ai_assistant",
+  rawText:
+    "High confidence that the recent support_knowledge_v2 feature flag change degraded the customer support response workflow. Recommended action: disable the feature flag.",
+  pastedBy: "operator",
+  pastedAt: new Date().toISOString()
+};
+
+if (process.env.NODE_ENV !== "test") {
+  initSplunkNodeTelemetry("remediation-orchestrator");
+  const port = Number(process.env.ORCHESTRATOR_PORT ?? 4010);
+  const server = buildServer();
+  server.log.info({ demoInput }, "remediation-orchestrator scaffold ready");
+  server.listen({ port, host: "0.0.0.0" }).catch((error) => {
+    server.log.error(error);
+    process.exit(1);
+  });
+}

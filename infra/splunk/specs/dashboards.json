@@ -1,0 +1,127 @@
+[
+  {
+    "key": "executive_story",
+    "name": "IBOBS Executive Story",
+    "timeRange": "-30m",
+    "charts": [
+      {
+        "name": "Customer Support Response Latency",
+        "type": "time",
+        "programText": "A = data('latency_latest_ms', filter=filter('app.business_transaction', 'customer_support_response')).mean().publish(label='Latency')",
+        "grid": { "width": 6, "height": 1, "row": 0, "column": 0 }
+      },
+      {
+        "name": "Affected Sessions",
+        "type": "single_value",
+        "programText": "A = data('affected_sessions', filter=filter('deployment.environment', '{{deployment_environment}}')).publish(label='Sessions')",
+        "grid": { "width": 6, "height": 1, "row": 0, "column": 6 }
+      }
+    ]
+  },
+  {
+    "key": "business_transactions",
+    "name": "IBOBS Business Transactions",
+    "timeRange": "-30m",
+    "charts": [
+      {
+        "name": "Latency by Business Transaction",
+        "type": "time",
+        "programText": "A = data('latency_latest_ms', filter=filter('deployment.environment', '{{deployment_environment}}')).mean(by=['app.business_transaction']).publish(label='Latency')",
+        "grid": { "width": 12, "height": 1, "row": 0, "column": 0 }
+      },
+      {
+        "name": "Error Rate by Business Transaction",
+        "type": "time",
+        "programText": "A = data('errors', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['app.business_transaction'])\nB = data('requests', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['app.business_transaction'])\nC = (A / B).publish(label='Error Rate')",
+        "grid": { "width": 12, "height": 1, "row": 1, "column": 0 }
+      }
+    ]
+  },
+  {
+    "key": "digital_experience",
+    "name": "IBOBS Digital Experience",
+    "timeRange": "-30m",
+    "charts": [
+      {
+        "name": "Affected Sessions",
+        "type": "single_value",
+        "programText": "A = data('affected_sessions', filter=filter('deployment.environment', '{{deployment_environment}}')).sum().publish(label='Affected Sessions')",
+        "grid": { "width": 3, "height": 1, "row": 0, "column": 0 }
+      },
+      {
+        "name": "Journey Latency by Business Transaction",
+        "type": "time",
+        "programText": "A = data('latency_latest_ms', filter=filter('deployment.environment', '{{deployment_environment}}')).mean(by=['app.business_transaction']).publish(label='Latency')",
+        "grid": { "width": 9, "height": 1, "row": 0, "column": 3 }
+      },
+      {
+        "name": "DEA Frustration Signals",
+        "type": "time",
+        "programText": "A = data('frustration_signals', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['journey']).publish(label='Signals')",
+        "grid": { "width": 6, "height": 1, "row": 1, "column": 0 }
+      },
+      {
+        "name": "Session Replay Candidates",
+        "type": "time",
+        "programText": "A = data('session_replay_candidates', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['app.business_transaction']).publish(label='Replay Candidates')",
+        "grid": { "width": 6, "height": 1, "row": 1, "column": 6 }
+      }
+    ]
+  },
+  {
+    "key": "service_health",
+    "name": "IBOBS Service Health",
+    "timeRange": "-30m",
+    "charts": [
+      {
+        "name": "Latency by Service",
+        "type": "time",
+        "programText": "A = data('latency_latest_ms', filter=filter('deployment.environment', '{{deployment_environment}}')).mean(by=['service']).publish(label='Latency')",
+        "grid": { "width": 6, "height": 1, "row": 0, "column": 0 }
+      },
+      {
+        "name": "Errors by Service",
+        "type": "time",
+        "programText": "A = data('errors', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['service'])\nB = data('requests', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['service'])\nC = (A / B).publish(label='Error Rate')",
+        "grid": { "width": 6, "height": 1, "row": 0, "column": 6 }
+      },
+      {
+        "name": "Suspect Dependency",
+        "type": "time",
+        "programText": "A = data('suspect_dependency_events', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['suspect_service']).publish(label='Suspect Service')",
+        "grid": { "width": 12, "height": 1, "row": 1, "column": 0 }
+      }
+    ]
+  },
+  {
+    "key": "operator_remediation",
+    "name": "IBOBS Remediation Operations",
+    "timeRange": "-30m",
+    "charts": [
+      {
+        "name": "Remediation Policy Mode Volume",
+        "type": "time",
+        "programText": "A = data('remediation_policy_decisions', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['policy_mode']).publish(label='Policy Decisions')",
+        "grid": { "width": 6, "height": 1, "row": 0, "column": 0 }
+      },
+      {
+        "name": "Remediation Actions Proposed",
+        "type": "time",
+        "programText": "A = data('remediation_actions_proposed', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['action.type']).publish(label='Actions')",
+        "grid": { "width": 6, "height": 1, "row": 0, "column": 6 }
+      },
+      {
+        "name": "Remediation Duration",
+        "type": "time",
+        "programText": "A = data('remediation_duration_ms', filter=filter('deployment.environment', '{{deployment_environment}}')).mean(by=['action.type']).publish(label='Duration')",
+        "grid": { "width": 6, "height": 1, "row": 1, "column": 0 }
+      },
+      {
+        "name": "Blast Radius Distribution",
+        "type": "time",
+        "programText": "A = data('incident_opened', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['blast_radius']).publish(label='Incidents')",
+        "grid": { "width": 6, "height": 1, "row": 1, "column": 6 }
+      }
+    ]
+  }
+]

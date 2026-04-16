@@ -1,0 +1,147 @@
+# IBOBS-2002 Use Case
+
+## Title
+
+Automated Resolution, Accelerated Insights: AI Remediation Agents in Splunk Observability Cloud
+
+## Use Case Summary
+
+A company launches an AI-powered support portal to improve customer experience, reduce pressure on human agents, and scale digital service. The portal becomes a high-value customer touchpoint, which means performance or reliability issues immediately affect customer trust.
+
+During a peak usage period, a change in a dependency path or feature-flag configuration causes the AI support experience to slow down and partially fail. Splunk RUM, Digital Experience Analytics, and Session Replay expose the customer impact immediately. Splunk Observability Cloud then correlates the relevant telemetry, connects the digital experience to the backend path, and helps the team understand the likely cause. A separate remediation orchestrator receives the detector alert, accepts a human-in-the-loop summary from Splunk AI Assistant or Troubleshooting Agent, enriches missing structured fields through targeted Splunk API lookups, and then passes a bounded evidence package to the remediation agent. The team applies policy, approves the action, validates recovery, and preserves a clear audit trail.
+
+This use case demonstrates how customers can move from observability as explanation to observability-informed action, without giving up trust, governance, or control.
+
+## Business Problem
+
+Customer-facing AI services create a new operational challenge:
+
+- customers expect fast, accurate, always-on digital experiences
+- AI workflows depend on multiple services, tools, models, and data sources
+- when these systems degrade, trust drops quickly
+- browser friction and abandoned sessions appear before many teams understand the backend cause
+- teams often detect the problem, but still lose time deciding what action is safe
+
+The issue is no longer only incident detection. The issue is how to convert evidence into a trustworthy remediation decision fast enough to protect the customer experience.
+
+## Customer Scenario
+
+A customer opens an AI support portal to resolve a product issue. The request enters a backend workflow that depends on a knowledge or retrieval service. A change in that dependency path introduces latency and intermittent failures.
+
+The portal supports multiple business transactions, for example:
+
+- `Customer Support Response`
+- `Case Status Lookup`
+- `Knowledge Article Search`
+
+In this use case, only `Customer Support Response` is materially impacted. The other transactions remain healthy, which helps demonstrate how Splunk business transactions, endpoint grouping, and service views can isolate the affected workflow without making the whole application look broken.
+
+From the customer point of view:
+
+- answers take too long
+- some requests fail
+- the browser session shows frustration signals
+- confidence in the digital support experience falls quickly
+
+From the operations point of view:
+
+- RUM and Digital Experience Analytics show the failing customer journey
+- Session Replay shows what the user actually experienced
+- telemetry shows rising latency and errors
+- business transaction views show one affected workflow while others remain healthy
+- the affected path is visible, but action still requires judgment
+- the team needs to know not only what is broken, but what should happen next
+
+## Desired Outcome
+
+The desired outcome is not full autonomous remediation.
+
+The desired outcome is:
+
+- rapid detection of customer impact
+- visibility into the degraded browser experience
+- fast correlation of evidence across the affected system
+- a bounded remediation recommendation
+- policy-based approval for the action
+- validation that the action improved the customer experience
+- a complete audit trail of what was proposed, approved, executed, and verified
+
+## Solution Pattern
+
+This use case follows a two-layer model.
+
+### 1. Observability and Evidence Layer
+
+Splunk Observability Cloud:
+
+- detects a degraded user session through RUM and DEA
+- shows the customer journey through Session Replay
+- detects service degradation
+- maps the issue to a business transaction and backend service path
+- uses endpoint and operation grouping to keep URL-level views readable
+- surfaces latency and error patterns
+- correlates telemetry across the affected flow
+- helps identify likely cause and blast radius
+- provides the evidence needed to support a remediation decision
+
+### 2. Action Layer
+
+A separate remediation orchestrator and remediation agent:
+
+- receive the detector webhook from Splunk
+- accept human-readable investigation context from the presenter
+- enrich missing structured fields from Splunk APIs when needed
+- receive the incident context
+- evaluate a small set of approved actions
+- propose a bounded remediation
+- wait for policy-driven approval when required
+- execute the approved action
+- validate whether the system recovered
+
+This use case does not assume that Splunk AI Assistant directly invokes the remediation agent. Splunk provides the observability, detection, and investigation context. The action path is handled by a separate remediation flow, with a hybrid handoff that combines human-readable AI Assistant output and targeted Splunk API enrichment.
+
+## Example Remediation Path
+
+Primary example:
+
+- the system detects degradation in the AI support workflow
+- RUM and DEA show a frustrating browser journey
+- Session Replay confirms what the user experienced
+- the detector webhook opens the incident in the orchestrator
+- the operator copies the AI Assistant summary into the orchestrator
+- the orchestrator fills missing structured fields from Splunk APIs
+- evidence indicates a recent feature or dependency change
+- the remediation agent proposes `disable_feature_flag`
+- the action is marked `approval_required`
+- the operator approves the action
+- the feature is disabled
+- latency and error rates improve
+- the action and validation are recorded
+
+This path is easy for customers to understand because it is bounded, visible, and low risk compared with broader automated changes.
+
+## Why This Resonates With Customers
+
+This use case reflects what many customers are facing now:
+
+- AI is moving into the production path
+- digital experience failures are immediately visible to users
+- browser experience, backend performance, and AI behavior must be understood together
+- teams want faster action, but not black-box automation
+- governance and trust now shape how far automation can go
+
+The value is not “AI fixed the issue automatically.”
+
+The value is:
+
+- faster movement from insight to action
+- a visible human trust checkpoint before automation continues
+- fewer blind handoffs during incidents
+- better protection of customer trust
+- stronger confidence in operational automation
+
+## Key Message
+
+The message for customers is simple:
+
+Observability is no longer just about understanding what happened in the backend. In AI-driven customer environments, it must start with the digital experience and extend all the way to safe, explainable, and validated action.

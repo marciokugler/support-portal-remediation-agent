@@ -1,0 +1,231 @@
+services:
+  splunk-otel-collector:
+    image: quay.io/signalfx/splunk-otel-collector:0.147.1
+    user: "0:0"
+    environment:
+      SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
+      SPLUNK_REALM: ${SPLUNK_REALM:-us1}
+      SPLUNK_HEC_TOKEN: ${SPLUNK_HEC_TOKEN:-}
+      SPLUNK_HEC_URL: ${SPLUNK_HEC_URL:-}
+      SPLUNK_HEC_INDEX: ${SPLUNK_HEC_INDEX:-observability}
+    command:
+      - "--config=/etc/otel/config.yaml"
+    volumes:
+      - ../otel-collector/config.yaml:/etc/otel/config.yaml:ro
+      - ../../:/workspace:ro
+      - /:/hostfs:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+  frontend:
+    image: node:22
+    working_dir: /workspace
+    environment:
+      VITE_API_BASE_URL: http://api-gateway:4000
+      VITE_ORCHESTRATOR_BASE_URL: http://remediation-orchestrator:4010
+      VITE_SCENARIO_CONTROLLER_BASE_URL: http://scenario-controller:4004
+      VITE_SPLUNK_REALM: ${VITE_SPLUNK_REALM:-${SPLUNK_REALM:-us1}}
+      VITE_SPLUNK_RUM_TOKEN: ${VITE_SPLUNK_RUM_TOKEN:-}
+    command: >
+      sh -lc "npm install &&
+      npm run dev --workspace @ibobs/frontend -- --host 0.0.0.0 --port 5173"
+    volumes:
+      - ../../:/workspace
+      - node_modules:/workspace/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - splunk-otel-collector
+      - api-gateway
+  operator-console:
+    image: node:22
+    working_dir: /workspace
+    environment:
+      VITE_ORCHESTRATOR_BASE_URL: http://remediation-orchestrator:4010
+      VITE_SCENARIO_CONTROLLER_BASE_URL: http://scenario-controller:4004
+    command: >
+      sh -lc "npm install &&
+      npm run dev --workspace @ibobs/operator-console -- --host 0.0.0.0 --port 5174"
+    volumes:
+      - ../../:/workspace
+      - node_modules:/workspace/node_modules
+    ports:
+      - "5174:5174"
+    depends_on:
+      - remediation-orchestrator
+  api-gateway:
+    image: node:22
+    working_dir: /workspace
+    environment:
+      API_GATEWAY_PORT: 4000
+      ASSISTANT_SERVICE_BASE_URL: http://assistant-service:4001
+      CASE_SERVICE_BASE_URL: http://case-service:4002
+      KNOWLEDGE_SERVICE_BASE_URL: http://knowledge-service:4003
+      SPLUNK_REALM: ${SPLUNK_REALM:-}
+      SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
+      DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
+      OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_PROPAGATORS: tracecontext,baggage,b3
+      SPLUNK_PROFILER_ENABLED: ${SPLUNK_PROFILER_ENABLED:-false}
+    command: >
+      sh -lc "npm install &&
+      npm run dev --workspace @ibobs/api-gateway"
+    volumes:
+      - ../../:/workspace
+      - node_modules:/workspace/node_modules
+    ports:
+      - "4000:4000"
+    depends_on:
+      - splunk-otel-collector
+      - assistant-service
+      - case-service
+      - knowledge-service
+  assistant-service:
+    image: node:22
+    working_dir: /workspace
+    environment:
+      ASSISTANT_SERVICE_PORT: 4001
+      KNOWLEDGE_SERVICE_BASE_URL: http://knowledge-service:4003
+      SPLUNK_REALM: ${SPLUNK_REALM:-}
+      SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
+      DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
+      OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_PROPAGATORS: tracecontext,baggage,b3
+      SPLUNK_PROFILER_ENABLED: ${SPLUNK_PROFILER_ENABLED:-false}
+    command: >
+      sh -lc "npm install &&
+      npm run dev --workspace @ibobs/assistant-service"
+    volumes:
+      - ../../:/workspace
+      - node_modules:/workspace/node_modules
+    ports:
+      - "4001:4001"
+    depends_on:
+      - splunk-otel-collector
+      - knowledge-service
+  case-service:
+    image: node:22
+    working_dir: /workspace
+    environment:
+      CASE_SERVICE_PORT: 4002
+      SPLUNK_REALM: ${SPLUNK_REALM:-}
+      SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
+      DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
+      OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_PROPAGATORS: tracecontext,baggage,b3
+      SPLUNK_PROFILER_ENABLED: ${SPLUNK_PROFILER_ENABLED:-false}
+    command: >
+      sh -lc "npm install &&
+      npm run dev --workspace @ibobs/case-service"
+    volumes:
+      - ../../:/workspace
+      - node_modules:/workspace/node_modules
+    ports:
+      - "4002:4002"
+  knowledge-service:
+    image: node:22
+    working_dir: /workspace
+    environment:
+      KNOWLEDGE_SERVICE_PORT: 4003
+      SPLUNK_REALM: ${SPLUNK_REALM:-}
+      SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
+      DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
+      OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_PROPAGATORS: tracecontext,baggage,b3
+      SPLUNK_PROFILER_ENABLED: ${SPLUNK_PROFILER_ENABLED:-false}
+    command: >
+      sh -lc "npm install &&
+      npm run dev --workspace @ibobs/knowledge-service"
+    volumes:
+      - ../../:/workspace
+      - node_modules:/workspace/node_modules
+    ports:
+      - "4003:4003"
+  scenario-controller:
+    image: node:22
+    working_dir: /workspace
+    environment:
+      SCENARIO_CONTROLLER_PORT: 4004
+      KNOWLEDGE_SERVICE_BASE_URL: http://knowledge-service:4003
+      SPLUNK_REALM: ${SPLUNK_REALM:-}
+      SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
+      DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
+      OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_PROPAGATORS: tracecontext,baggage,b3
+      SPLUNK_PROFILER_ENABLED: ${SPLUNK_PROFILER_ENABLED:-false}
+    command: >
+      sh -lc "npm install &&
+      npm run dev --workspace @ibobs/scenario-controller"
+    volumes:
+      - ../../:/workspace
+      - node_modules:/workspace/node_modules
+    ports:
+      - "4004:4004"
+    depends_on:
+      - splunk-otel-collector
+      - knowledge-service
+  remediation-orchestrator:
+    image: node:22
+    working_dir: /workspace
+    environment:
+      ORCHESTRATOR_PORT: 4010
+      REMEDIATION_AGENT_BASE_URL: http://remediation-agent:8000
+      SPLUNK_REALM: ${SPLUNK_REALM:-}
+      SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
+      SPLUNK_API_BASE_URL: ${SPLUNK_API_BASE_URL:-https://api.us1.signalfx.com}
+      DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
+      OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_PROPAGATORS: tracecontext,baggage,b3
+      SPLUNK_PROFILER_ENABLED: ${SPLUNK_PROFILER_ENABLED:-false}
+    command: >
+      sh -lc "npm install &&
+      npm run dev --workspace @ibobs/remediation-orchestrator"
+    volumes:
+      - ../../:/workspace
+      - node_modules:/workspace/node_modules
+    ports:
+      - "4010:4010"
+    depends_on:
+      - splunk-otel-collector
+      - remediation-agent
+  remediation-agent:
+    image: python:3.12
+    working_dir: /workspace
+    environment:
+      REMEDIATION_AGENT_PORT: 8000
+      OTEL_SERVICE_NAME: remediation-agent
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      SPLUNK_REALM: ${SPLUNK_REALM:-}
+      SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
+      DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
+      OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_PROPAGATORS: tracecontext,baggage,b3
+    command: >
+      sh -lc "python -m venv /opt/venv &&
+      . /opt/venv/bin/activate &&
+      pip install -e /workspace/apps/remediation-agent &&
+      uvicorn app.main:app --app-dir /workspace/apps/remediation-agent --host 0.0.0.0 --port 8000"
+    volumes:
+      - ../../:/workspace
+      - python_venv:/opt/venv
+    ports:
+      - "8000:8000"
+
+volumes:
+  node_modules:
+  python_venv:
