@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { currentBrowserAppConfig } from "@ibobs/runtime-config/browser";
 import { setJourneyContext, trackBusinessTransaction } from "./rum";
 
 const transactions = [
@@ -20,16 +21,13 @@ const transactions = [
 ];
 
 export function App() {
+  const { apiBaseUrl, scenarioControllerBaseUrl } = currentBrowserAppConfig();
   const [supportPrompt, setSupportPrompt] = useState("My support portal is slow and I need help understanding why.");
   const [caseId, setCaseId] = useState("CASE-1024");
   const [articleQuery, setArticleQuery] = useState("reset password");
   const [result, setResult] = useState("Choose a transaction to see live API output.");
   const [activeScenario, setActiveScenario] = useState("healthy");
   const [scenarioMessage, setScenarioMessage] = useState("No scenario active.");
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:4000";
-  const scenarioBaseUrl =
-    import.meta.env.VITE_SCENARIO_CONTROLLER_BASE_URL ?? "http://127.0.0.1:4004";
-
   useEffect(() => {
     setJourneyContext({
       "app.business_transaction": "customer_support_response",
@@ -114,7 +112,7 @@ export function App() {
   }
 
   async function refreshScenario() {
-    const response = await fetch(`${scenarioBaseUrl}/scenario/state`);
+    const response = await fetch(`${scenarioControllerBaseUrl}/scenario/state`);
     const payload = (await response.json()) as { activeScenario: string };
     setActiveScenario(payload.activeScenario);
     setScenarioMessage(
@@ -125,7 +123,7 @@ export function App() {
   }
 
   async function activateScenario(scenarioId: string) {
-    const response = await fetch(`${scenarioBaseUrl}/scenario/activate/${scenarioId}`, {
+    const response = await fetch(`${scenarioControllerBaseUrl}/scenario/activate/${scenarioId}`, {
       method: "POST"
     });
     const payload = (await response.json()) as { activeScenario: string };
@@ -134,7 +132,7 @@ export function App() {
   }
 
   async function resetScenario() {
-    const response = await fetch(`${scenarioBaseUrl}/scenario/reset`, {
+    const response = await fetch(`${scenarioControllerBaseUrl}/scenario/reset`, {
       method: "POST"
     });
     const payload = (await response.json()) as { activeScenario: string };

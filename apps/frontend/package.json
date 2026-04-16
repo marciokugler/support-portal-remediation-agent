@@ -10,6 +10,7 @@
     "typecheck": "echo typecheck frontend"
   },
   "dependencies": {
+    "@ibobs/runtime-config": "0.1.0",
     "@splunk/otel-web-session-recorder": "^2.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

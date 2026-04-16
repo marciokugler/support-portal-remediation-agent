@@ -1,5 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
+import { defaultPorts, localServicePort, localServiceUrl } from "@ibobs/runtime-config";
 import { BUSINESS_TRANSACTIONS } from "@ibobs/shared-types";
 import {
   annotateServerEntrySpan,
@@ -23,7 +24,11 @@ export const scenarios = {
 };
 
 let activeScenario = "healthy";
-const knowledgeServiceBaseUrl = process.env.KNOWLEDGE_SERVICE_BASE_URL ?? "http://127.0.0.1:4003";
+const knowledgeServiceBaseUrl = localServiceUrl(process.env, {
+  baseUrlEnvVar: "KNOWLEDGE_SERVICE_BASE_URL",
+  portEnvVar: "KNOWLEDGE_SERVICE_PORT",
+  defaultPort: defaultPorts.knowledgeService
+});
 
 export function buildServer() {
   const app = Fastify({ loggerInstance: createServiceLogger("scenario-controller") });
@@ -102,7 +107,7 @@ export function buildServer() {
 
 if (process.env.NODE_ENV !== "test") {
   initSplunkNodeTelemetry("scenario-controller");
-  const port = Number(process.env.SCENARIO_CONTROLLER_PORT ?? 4004);
+  const port = localServicePort(process.env, "SCENARIO_CONTROLLER_PORT", defaultPorts.scenarioController);
   const server = buildServer();
   server.log.info({ scenarios }, "scenario-controller scaffold ready");
   server.listen({ port, host: "0.0.0.0" }).catch((error) => {

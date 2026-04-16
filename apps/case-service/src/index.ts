@@ -1,5 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
+import { defaultPorts, localServicePort } from "@ibobs/runtime-config";
 import { BUSINESS_TRANSACTIONS } from "@ibobs/shared-types";
 import {
   annotateServerEntrySpan,
@@ -75,7 +76,7 @@ export function buildServer() {
 
 if (process.env.NODE_ENV !== "test") {
   initSplunkNodeTelemetry(caseService.name);
-  const port = Number(process.env.CASE_SERVICE_PORT ?? 4002);
+  const port = localServicePort(process.env, "CASE_SERVICE_PORT", defaultPorts.caseService);
   const server = buildServer();
   server.log.info({ caseService }, "case-service scaffold ready");
   server.listen({ port, host: "0.0.0.0" }).catch((error) => {

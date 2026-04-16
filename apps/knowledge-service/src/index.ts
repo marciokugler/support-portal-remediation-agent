@@ -1,5 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
+import { defaultPorts, localServicePort } from "@ibobs/runtime-config";
 import { BUSINESS_TRANSACTIONS } from "@ibobs/shared-types";
 import {
   annotateServerEntrySpan,
@@ -162,7 +163,7 @@ export function buildServer() {
 
 if (process.env.NODE_ENV !== "test") {
   initSplunkNodeTelemetry(knowledgeService.name);
-  const port = Number(process.env.KNOWLEDGE_SERVICE_PORT ?? 4003);
+  const port = localServicePort(process.env, "KNOWLEDGE_SERVICE_PORT", defaultPorts.knowledgeService);
   const server = buildServer();
   server.log.info({ knowledgeService }, "knowledge-service scaffold ready");
   server.listen({ port, host: "0.0.0.0" }).catch((error) => {

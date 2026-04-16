@@ -1,5 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyRequest } from "fastify";
+import { defaultPorts, localServicePort, localServiceUrl } from "@ibobs/runtime-config";
 import { type SpanContext, isSpanContextValid, SpanStatusCode, TraceFlags, trace } from "@opentelemetry/api";
 import { BUSINESS_TRANSACTIONS } from "@ibobs/shared-types";
 import {
@@ -38,9 +39,21 @@ export function routes() {
   ];
 }
 
-const assistantServiceBaseUrl = process.env.ASSISTANT_SERVICE_BASE_URL ?? "http://127.0.0.1:4001";
-const caseServiceBaseUrl = process.env.CASE_SERVICE_BASE_URL ?? "http://127.0.0.1:4002";
-const knowledgeServiceBaseUrl = process.env.KNOWLEDGE_SERVICE_BASE_URL ?? "http://127.0.0.1:4003";
+const assistantServiceBaseUrl = localServiceUrl(process.env, {
+  baseUrlEnvVar: "ASSISTANT_SERVICE_BASE_URL",
+  portEnvVar: "ASSISTANT_SERVICE_PORT",
+  defaultPort: defaultPorts.assistantService
+});
+const caseServiceBaseUrl = localServiceUrl(process.env, {
+  baseUrlEnvVar: "CASE_SERVICE_BASE_URL",
+  portEnvVar: "CASE_SERVICE_PORT",
+  defaultPort: defaultPorts.caseService
+});
+const knowledgeServiceBaseUrl = localServiceUrl(process.env, {
+  baseUrlEnvVar: "KNOWLEDGE_SERVICE_BASE_URL",
+  portEnvVar: "KNOWLEDGE_SERVICE_PORT",
+  defaultPort: defaultPorts.knowledgeService
+});
 
 function attachServerTimingHeader(reply: { header: (name: string, value: string) => void }) {
   const span = trace.getActiveSpan();
@@ -282,7 +295,7 @@ export function buildServer() {
 
 if (process.env.NODE_ENV !== "test") {
   initSplunkNodeTelemetry("support-portal-api");
-  const port = Number(process.env.API_GATEWAY_PORT ?? 4000);
+  const port = localServicePort(process.env, "API_GATEWAY_PORT", defaultPorts.apiGateway);
   const server = buildServer();
   server.log.info({ routes: routes() }, "api-gateway scaffold ready");
   server.listen({ port, host: "0.0.0.0" }).catch((error) => {

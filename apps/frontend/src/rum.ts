@@ -1,6 +1,7 @@
 import SplunkRum from "@splunk/otel-web";
 import SplunkRumRecorder from "@splunk/otel-web-session-recorder";
 import { SpanStatusCode, trace } from "@opentelemetry/api";
+import { currentBrowserAppConfig } from "@ibobs/runtime-config/browser";
 import { buildRumConfig } from "@ibobs/telemetry/browser";
 
 declare global {
@@ -15,6 +16,7 @@ export function initRum() {
   }
 
   const config = buildRumConfig("ibobs-support-portal");
+  const appConfig = currentBrowserAppConfig();
   if (!config.rumTokenConfigured) {
     console.info("[telemetry:frontend] RUM disabled:", config.deactivatedReason);
     return;
@@ -26,25 +28,11 @@ export function initRum() {
     applicationName: config.applicationName,
     deploymentEnvironment: config.deploymentEnvironment,
     tracer: {
-      propagateTraceHeaderCorsUrls: [
-        /^http:\/\/localhost:4000\//,
-        /^http:\/\/127\.0\.0\.1:4000\//,
-        /^http:\/\/localhost:4004\//,
-        /^http:\/\/127\.0\.0\.1:4004\//,
-        /^http:\/\/localhost:4010\//,
-        /^http:\/\/127\.0\.0\.1:4010\//
-      ]
+      propagateTraceHeaderCorsUrls: appConfig.tracePropagationUrls
     },
     instrumentations: {
       fetch: {
-        propagateTraceHeaderCorsUrls: [
-          /^http:\/\/localhost:4000\//,
-          /^http:\/\/127\.0\.0\.1:4000\//,
-          /^http:\/\/localhost:4004\//,
-          /^http:\/\/127\.0\.0\.1:4004\//,
-          /^http:\/\/localhost:4010\//,
-          /^http:\/\/127\.0\.0\.1:4010\//
-        ],
+        propagateTraceHeaderCorsUrls: appConfig.tracePropagationUrls,
         applyCustomAttributesOnSpan(span) {
           span.setAttributes({
             "app.frontend_surface": "support_portal",
@@ -53,14 +41,7 @@ export function initRum() {
         }
       },
       xhr: {
-        propagateTraceHeaderCorsUrls: [
-          /^http:\/\/localhost:4000\//,
-          /^http:\/\/127\.0\.0\.1:4000\//,
-          /^http:\/\/localhost:4004\//,
-          /^http:\/\/127\.0\.0\.1:4004\//,
-          /^http:\/\/localhost:4010\//,
-          /^http:\/\/127\.0\.0\.1:4010\//
-        ]
+        propagateTraceHeaderCorsUrls: appConfig.tracePropagationUrls
       }
     },
     spaMetrics: {

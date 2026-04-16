@@ -44,6 +44,11 @@ Key local URLs:
 - remediation orchestrator: `http://127.0.0.1:4010`
 - remediation agent: `http://127.0.0.1:8000`
 
+Runtime config note:
+- backend services now derive local base URLs from the matching `*_PORT` value when the explicit `*_BASE_URL` env var is unset
+- the frontend and operator console do the same for `VITE_*_BASE_URL`
+- this keeps local port changes aligned without editing multiple fallback sites in code
+
 ## Docker Compose
 
 The repo includes a development-oriented compose file at [infra/docker/docker-compose.yml](/Users/mkuglerr/code2/codex_projects/ciscolive26/infra/docker/docker-compose.yml).

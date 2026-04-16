@@ -1,6 +1,7 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
 import { timingSafeEqual } from "node:crypto";
+import { defaultPorts, localServicePort, localServiceUrl } from "@ibobs/runtime-config";
 import { parseAssistantEvidence } from "@ibobs/evidence-parser";
 import { evaluatePolicy } from "@ibobs/policy-engine";
 import {
@@ -270,7 +271,13 @@ export function buildServer() {
     process.env.SPLUNK_API_BASE_URL ?? "https://api.us1.signalfx.com",
     process.env.SPLUNK_ACCESS_TOKEN ?? ""
   );
-  const agentClient = new RemediationAgentClient(process.env.REMEDIATION_AGENT_BASE_URL ?? "http://127.0.0.1:8000");
+  const agentClient = new RemediationAgentClient(
+    localServiceUrl(process.env, {
+      baseUrlEnvVar: "REMEDIATION_AGENT_BASE_URL",
+      portEnvVar: "REMEDIATION_AGENT_PORT",
+      defaultPort: defaultPorts.remediationAgent
+    })
+  );
   const webhookSharedSecret = process.env.SPLUNK_WEBHOOK_SHARED_SECRET;
 
   app.get("/remediation/health", async () => ({
@@ -670,7 +677,7 @@ const demoInput: AssistantEvidenceInput = {
 
 if (process.env.NODE_ENV !== "test") {
   initSplunkNodeTelemetry("remediation-orchestrator");
-  const port = Number(process.env.ORCHESTRATOR_PORT ?? 4010);
+  const port = localServicePort(process.env, "ORCHESTRATOR_PORT", defaultPorts.orchestrator);
   const server = buildServer();
   server.log.info({ demoInput }, "remediation-orchestrator scaffold ready");
   server.listen({ port, host: "0.0.0.0" }).catch((error) => {

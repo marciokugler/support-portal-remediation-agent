@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { currentBrowserAppConfig } from "@ibobs/runtime-config/browser";
 
 const exampleAssistantOutput = `High confidence that support_knowledge_v2 degraded the Customer Support Response transaction.
 Likely blast radius is medium because only one business transaction is materially affected.
@@ -113,19 +114,16 @@ function readResponse(value: string): OrchestratorResponse | null {
 }
 
 export function App() {
+  const { orchestratorBaseUrl, scenarioControllerBaseUrl } = currentBrowserAppConfig();
   const [assistantSummary, setAssistantSummary] = useState(exampleAssistantOutput);
   const [incidentId, setIncidentId] = useState("");
   const [result, setResult] = useState<string>("No incident loaded yet.");
   const [scenarioState, setScenarioState] = useState("healthy");
   const parsedResult = readResponse(result);
-  const baseUrl = import.meta.env.VITE_ORCHESTRATOR_BASE_URL ?? "http://127.0.0.1:4010";
-  const scenarioBaseUrl =
-    import.meta.env.VITE_SCENARIO_CONTROLLER_BASE_URL ?? "http://127.0.0.1:4004";
-
   async function refreshIncidents() {
     const [incidentsResponse, receiptsResponse] = await Promise.all([
-      fetch(`${baseUrl}/remediation/incidents`),
-      fetch(`${baseUrl}/remediation/webhook-receipts`)
+      fetch(`${orchestratorBaseUrl}/remediation/incidents`),
+      fetch(`${orchestratorBaseUrl}/remediation/webhook-receipts`)
     ]);
     const incidents = (await incidentsResponse.json()) as StoredIncident[];
     const receipts = (await receiptsResponse.json()) as WebhookReceipt[];
@@ -143,7 +141,7 @@ export function App() {
     };
 
     const detailResponse = await fetch(
-      `${baseUrl}/remediation/incidents/${encodeURIComponent(incidentWithDetector.incidentId)}`
+      `${orchestratorBaseUrl}/remediation/incidents/${encodeURIComponent(incidentWithDetector.incidentId)}`
     );
     const detailedIncident = detailResponse.ok
       ? ((await detailResponse.json()) as StoredIncident)
@@ -205,7 +203,7 @@ export function App() {
   }, []);
 
   async function createIncident() {
-    const response = await fetch(`${baseUrl}/webhooks/splunk/detector`, {
+    const response = await fetch(`${orchestratorBaseUrl}/webhooks/splunk/detector`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -221,7 +219,7 @@ export function App() {
   }
 
   async function proposeAction() {
-    const response = await fetch(`${baseUrl}/remediation/propose`, {
+    const response = await fetch(`${orchestratorBaseUrl}/remediation/propose`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -248,7 +246,7 @@ export function App() {
       return;
     }
 
-    const response = await fetch(`${baseUrl}/remediation/approve/${actionId}`, {
+    const response = await fetch(`${orchestratorBaseUrl}/remediation/approve/${actionId}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ incidentId })
@@ -263,7 +261,7 @@ export function App() {
       return;
     }
 
-    const response = await fetch(`${baseUrl}/remediation/explain`, {
+    const response = await fetch(`${orchestratorBaseUrl}/remediation/explain`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -279,13 +277,13 @@ export function App() {
   }
 
   async function refreshScenario() {
-    const response = await fetch(`${scenarioBaseUrl}/scenario/state`);
+    const response = await fetch(`${scenarioControllerBaseUrl}/scenario/state`);
     const payload = (await response.json()) as { activeScenario: string };
     setScenarioState(payload.activeScenario);
   }
 
   async function activateScenario(scenarioId: string) {
-    const response = await fetch(`${scenarioBaseUrl}/scenario/activate/${scenarioId}`, {
+    const response = await fetch(`${scenarioControllerBaseUrl}/scenario/activate/${scenarioId}`, {
       method: "POST"
     });
     const payload = (await response.json()) as { activeScenario: string };
@@ -293,7 +291,7 @@ export function App() {
   }
 
   async function resetScenario() {
-    const response = await fetch(`${scenarioBaseUrl}/scenario/reset`, {
+    const response = await fetch(`${scenarioControllerBaseUrl}/scenario/reset`, {
       method: "POST"
     });
     const payload = (await response.json()) as { activeScenario: string };

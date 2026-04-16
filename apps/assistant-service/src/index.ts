@@ -1,5 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
+import { defaultPorts, localServicePort, localServiceUrl } from "@ibobs/runtime-config";
 import { BUSINESS_TRANSACTIONS } from "@ibobs/shared-types";
 import {
   annotateServerEntrySpan,
@@ -21,7 +22,11 @@ export const assistantService = {
   operations: ["support.request.validate", "assistant.compose_response", "knowledge.fetch_context"]
 };
 
-const knowledgeServiceBaseUrl = process.env.KNOWLEDGE_SERVICE_BASE_URL ?? "http://127.0.0.1:4003";
+const knowledgeServiceBaseUrl = localServiceUrl(process.env, {
+  baseUrlEnvVar: "KNOWLEDGE_SERVICE_BASE_URL",
+  portEnvVar: "KNOWLEDGE_SERVICE_PORT",
+  defaultPort: defaultPorts.knowledgeService
+});
 
 export function buildServer() {
   const app = Fastify({ loggerInstance: createServiceLogger(assistantService.name) });
@@ -118,7 +123,7 @@ export function buildServer() {
 
 if (process.env.NODE_ENV !== "test") {
   initSplunkNodeTelemetry(assistantService.name);
-  const port = Number(process.env.ASSISTANT_SERVICE_PORT ?? 4001);
+  const port = localServicePort(process.env, "ASSISTANT_SERVICE_PORT", defaultPorts.assistantService);
   const server = buildServer();
   server.log.info({ assistantService }, "assistant-service scaffold ready");
   server.listen({ port, host: "0.0.0.0" }).catch((error) => {
