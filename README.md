@@ -21,20 +21,49 @@ This repository contains the implementation for the `IBOBS-2002` demo app and su
 
 ## Local Development
 
-1. Optionally copy [.env.example](/Users/mkuglerr/code2/codex_projects/ciscolive26/.env.example) to `.env`.
-   The stack runs without `.env`, but you need it for Splunk and OpenAI credentials.
-2. Install workspace dependencies with `npm install`.
-3. Create the Python virtual environment and install the remediation agent dependencies:
-   ```bash
-   cd apps/remediation-agent
-   python3 -m venv .venv
-   .venv/bin/pip install -e .
-   ```
-4. Start the full demo stack with `npm run dev:all`.
-5. For collector-based telemetry debugging, start the Splunk OTel Collector with `npm run dev:collector`.
-   This requires a running Docker daemon because the local collector is started from the official Splunk Collector container image.
-6. To expose the remediation orchestrator publicly for Splunk webhook delivery, run `npm run dev:tunnel`.
-   This uses `cloudflared` and publishes the local orchestrator port.
+Prerequisites:
+
+- Node.js 22 and npm
+- Python 3.11 or newer
+- Docker Desktop or another Docker daemon, only if you want the local Splunk OTel Collector or Docker Compose flow
+- `cloudflared`, only if you need to expose the local orchestrator for Splunk webhook delivery
+
+One-time setup from the repository root:
+
+```bash
+test -f .env || cp .env.example .env
+npm install
+python3 -m venv apps/remediation-agent/.venv
+apps/remediation-agent/.venv/bin/pip install -e apps/remediation-agent
+```
+
+The app stack can run without credentials in `.env`. Add `OPENAI_API_KEY`, `SPLUNK_ACCESS_TOKEN`, `SPLUNK_HEC_TOKEN`, and the related Splunk values when you want AI-backed remediation, telemetry export, logs, RUM, or Splunk API integration.
+
+Start everything locally:
+
+```bash
+npm run dev
+```
+
+`npm run dev` is an alias for `npm run dev:all`. It starts the backend services, Python remediation agent, customer frontend, and operator console in one process group.
+
+Useful alternatives:
+
+- `npm run dev:backend`: start only the backend services and remediation agent
+- `npm run dev:collector`: start the local Splunk OTel Collector container
+- `npm run dev:tunnel`: expose the orchestrator on a public Cloudflare tunnel URL
+- `npm test`: run the TypeScript unit tests
+- `npm run test:python`: run the Python Splunk object sync tests
+- `npm run build`: build all npm workspaces that define a build script
+
+When running with telemetry locally, load `.env` in the shell before starting the stack:
+
+```bash
+set -a
+source .env
+set +a
+npm run dev
+```
 
 Key local URLs:
 - frontend: `http://127.0.0.1:5173`
@@ -51,7 +80,7 @@ Runtime config note:
 
 ## Docker Compose
 
-The repo includes a development-oriented compose file at [infra/docker/docker-compose.yml](/Users/mkuglerr/code2/codex_projects/ciscolive26/infra/docker/docker-compose.yml).
+The repo includes a development-oriented compose file at [infra/docker/docker-compose.yml](infra/docker/docker-compose.yml).
 
 Run it from the repository root:
 
@@ -89,7 +118,7 @@ The frontend uses `@splunk/otel-web` for Splunk RUM and can optionally enable se
 
 For the current demo, keep both Splunk auto-instrumentation and the custom RED-style metrics (`latency_latest_ms`, `requests`, and `errors`) enabled so the existing dashboards and detectors continue to work. In a later cleanup, disable those custom RED metrics and migrate the affected dashboards and detectors to Splunk APM native RED views and detectors.
 
-For local telemetry debugging, the repo now supports routing OTLP traffic through the Splunk Distribution of the OpenTelemetry Collector using [infra/otel-collector/config.yaml](/Users/mkuglerr/code2/codex_projects/ciscolive26/infra/otel-collector/config.yaml).
+For local telemetry debugging, the repo now supports routing OTLP traffic through the Splunk Distribution of the OpenTelemetry Collector using [infra/otel-collector/config.yaml](infra/otel-collector/config.yaml).
 
 Structured log collection is now enabled for the backend services and remediation agent. Services write JSON logs to `var/log/*.log`, including trace and span correlation fields plus raw request payloads such as prompts, customer queries, and case IDs. The local collector reads those files and forwards them to Splunk HEC using `SPLUNK_HEC_URL`, `SPLUNK_HEC_TOKEN`, and `SPLUNK_HEC_INDEX`.
 
@@ -138,7 +167,7 @@ RUM_SIMULATOR_USERS=5 RUM_SIMULATOR_ROUNDS=10 npm run simulate:rum
 
 ## Splunk Provisioning Status
 
-The Terraform root module in [infra/terraform](/Users/mkuglerr/code2/codex_projects/ciscolive26/infra/terraform) has been applied successfully against the target org and currently manages:
+The Terraform root module in [infra/terraform](infra/terraform) has been applied successfully against the target org and currently manages:
 
 - dashboard group: `IBOBS 2002 Demo`
 - dashboards:
