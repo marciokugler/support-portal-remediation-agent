@@ -1,9 +1,8 @@
 ---
-description: Load Codex-imported conversation history for this project (see AGENTS.md)
+description: Project context source of truth
 alwaysApply: true
 ---
 
-Follow `AGENTS.md` in this project root for Codex history lookup.
-
-Before answering questions about prior Codex work, read `codex-archive/INDEX.md`
-and the relevant thread file(s) listed there.
+Follow `AGENTS.md` in this project root. The exported Codex conversation
+archive has been intentionally removed, so use the repository docs, source
+code, and git history as the source of truth.
