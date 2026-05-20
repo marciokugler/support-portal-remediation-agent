@@ -36,6 +36,19 @@ test("parseAssistantEvidence falls back to rollback plus disable flag when rollb
   ]);
 });
 
+test("parseAssistantEvidence keeps confidence separate from blast radius", () => {
+  const parsed = parseAssistantEvidence({
+    source: "splunk_ai_assistant",
+    rawText: `High confidence that support_knowledge_v2 degraded the Customer Support Response transaction.
+Likely blast radius is medium because only one business transaction is materially affected.
+Recommended action: disable_feature_flag.`
+  });
+
+  assert.equal(parsed.confidenceBand, "high");
+  assert.equal(parsed.blastRadius, BLAST_RADIUS.medium);
+  assert.equal(parsed.inferredTransaction, BUSINESS_TRANSACTIONS.customerSupportResponse);
+});
+
 test("parseAssistantEvidence defaults to customer support and medium confidence when evidence is sparse", () => {
   const parsed = parseAssistantEvidence({
     source: "splunk_ai_assistant",

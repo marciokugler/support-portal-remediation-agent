@@ -280,6 +280,44 @@ export function buildServer() {
   );
   const webhookSharedSecret = process.env.SPLUNK_WEBHOOK_SHARED_SECRET;
 
+  async function openIncidentFromDetector(payload: DetectorWebhookPayload) {
+    const incident = buildIncidentFromWebhook(payload);
+    const enrichment = await runInSpan(
+      "splunk.enrich_detector",
+      {
+        "incident.id": incident.incidentId,
+        "app.business_transaction": incident.businessTransaction,
+        "o11y.detector_id": payload.detectorId
+      },
+      () => splunkClient.enrichDetector(payload)
+    );
+    const metricAttrs = {
+      "deployment.environment": "demo",
+      "app.business_transaction": incident.businessTransaction,
+      incident_id: incident.incidentId
+    };
+    recordIncidentOpened(incident.blastRadius, metricAttrs);
+    if (enrichment.affectedSessions !== undefined) {
+      recordAffectedSessions(enrichment.affectedSessions, metricAttrs);
+    }
+    recordAffectedTransactionsCount(enrichment.affectedTransactions?.length ?? 1, metricAttrs);
+    if (enrichment.suspectService) {
+      recordSuspectDependency(enrichment.suspectService, metricAttrs);
+    }
+    recordFrustrationSignals(2, {
+      "deployment.environment": "demo",
+      journey: incident.businessTransaction
+    });
+    if (enrichment.sessionReplayUrl) {
+      recordSessionReplayCandidate(metricAttrs);
+    }
+
+    return {
+      incident,
+      enrichment
+    };
+  }
+
   app.get("/remediation/health", async () => ({
     status: "ok",
     service: "remediation-orchestrator"
@@ -332,41 +370,19 @@ export function buildServer() {
       },
       "webhook receipt recorded"
     );
-    const incident = buildIncidentFromWebhook(payload);
-    const enrichment = await runInSpan(
-      "splunk.enrich_detector",
-      {
-        "incident.id": incident.incidentId,
-        "app.business_transaction": incident.businessTransaction,
-        "o11y.detector_id": payload.detectorId
-      },
-      () => splunkClient.enrichDetector(payload)
-    );
-    const metricAttrs = {
-      "deployment.environment": "demo",
-      "app.business_transaction": incident.businessTransaction,
-      incident_id: incident.incidentId
-    };
-    recordIncidentOpened(incident.blastRadius, metricAttrs);
-    if (enrichment.affectedSessions !== undefined) {
-      recordAffectedSessions(enrichment.affectedSessions, metricAttrs);
-    }
-    recordAffectedTransactionsCount(enrichment.affectedTransactions?.length ?? 1, metricAttrs);
-    if (enrichment.suspectService) {
-      recordSuspectDependency(enrichment.suspectService, metricAttrs);
-    }
-    recordFrustrationSignals(2, {
-      "deployment.environment": "demo",
-      journey: incident.businessTransaction
-    });
-    if (enrichment.sessionReplayUrl) {
-      recordSessionReplayCandidate(metricAttrs);
-    }
+    return openIncidentFromDetector(payload);
+  });
 
-    return {
-      incident,
-      enrichment
-    };
+  app.post("/remediation/demo/incidents", async (request) => {
+    const payload = normalizeDetectorWebhookPayload(request.body);
+    request.log.info(
+      {
+        detectorId: payload.detectorId,
+        detectorName: payload.detectorName
+      },
+      "opening local demo incident"
+    );
+    return openIncidentFromDetector(payload);
   });
 
   app.post("/remediation/context", async (request) => {
@@ -557,6 +573,13 @@ export function buildServer() {
     if (!incident?.proposedAction) {
       reply.code(404);
       return { error: "Proposed action not found for incident" };
+    }
+    if (incident.proposedAction.policyMode !== POLICY_MODES.approvalRequired) {
+      reply.code(409);
+      return {
+        error: `Action is ${incident.proposedAction.policyMode} and cannot be executed from the approval endpoint.`,
+        incident
+      };
     }
 
     const approvedAt = new Date().toISOString();

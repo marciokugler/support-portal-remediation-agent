@@ -26,7 +26,7 @@ Prerequisites:
 - Node.js 22 and npm
 - Python 3.11 or newer
 - Docker Desktop or another Docker daemon, only if you want the local Splunk OTel Collector or Docker Compose flow
-- `cloudflared`, only if you need to expose the local orchestrator for Splunk webhook delivery
+- `cloudflared`, only if you want to test the optional live Splunk webhook delivery path
 
 One-time setup from the repository root:
 
@@ -51,7 +51,7 @@ Useful alternatives:
 
 - `npm run dev:backend`: start only the backend services and remediation agent
 - `npm run dev:collector`: start the local Splunk OTel Collector container
-- `npm run dev:tunnel`: expose the orchestrator on a public Cloudflare tunnel URL
+- `npm run dev:tunnel`: expose the orchestrator on a public Cloudflare tunnel URL for the optional webhook path
 - `npm test`: run the TypeScript unit tests
 - `npm run test:python`: run the Python Splunk object sync tests
 - `npm run build`: build all npm workspaces that define a build script
@@ -184,12 +184,18 @@ The Terraform root module in [infra/terraform](infra/terraform) has been applied
   - `IBOBS Remediation Validation Failed`
   - `IBOBS Blast Radius Guardrail`
 
-Current limitation:
+Primary lab flow:
 
-- detector notifications are not yet wired to the orchestrator because Splunk Cloud cannot send webhooks to a local `127.0.0.1` endpoint
-- we need a public webhook URL or tunnel before enabling that last step
+- the workshop no longer depends on live detector webhook delivery
+- the presenter copies Splunk AI Assistant or Troubleshooting Agent evidence into the operator console
+- the operator console opens the incident and submits the copied evidence to the orchestrator
+
+Optional webhook path:
+
+- Splunk Cloud cannot send webhooks to a local `127.0.0.1` endpoint
+- use a public URL or tunnel only when you explicitly want to test live detector-to-orchestrator delivery
 
 Webhook hardening:
 
 - if `SPLUNK_WEBHOOK_SHARED_SECRET` is set, the orchestrator requires `x-ibobs-webhook-secret` on `POST /webhooks/splunk/detector`
-- this is intended for the future webhook integration object once the public URL is available
+- this remains available for the optional webhook integration object once a public URL is available

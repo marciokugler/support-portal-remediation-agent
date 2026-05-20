@@ -15,12 +15,11 @@ receivers:
       memory:
       network:
       paging:
-      process:
       processes:
   filelog:
     include:
       - /workspace/var/log/*.log
-    start_at: beginning
+    start_at: end
     include_file_path: true
     operators:
       - type: json_parser

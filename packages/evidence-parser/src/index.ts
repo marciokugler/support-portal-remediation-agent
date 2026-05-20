@@ -93,16 +93,32 @@ function inferCandidateActions(text: string) {
 
 function inferBlastRadius(text: string) {
   const normalized = text.toLowerCase();
-  const explicitBlastRadius = matchFirst(text, [/blast radius:\s*([^\n]+)/i]);
-  const blastText = (explicitBlastRadius ?? normalized).toLowerCase();
+  const explicitBlastRadius = matchFirst(text, [
+    /blast radius\s*(?:is|:)\s*(low|medium|high)\b/i,
+    /blast radius\s*(?:is|:)\s*([^\n.]+)/i
+  ]);
+  const blastText = explicitBlastRadius?.toLowerCase();
   const containsWord = (value: string, word: string) => new RegExp(`\\b${word}\\b`, "i").test(value);
 
-  if (containsWord(blastText, "high") || normalized.includes("multiple business transactions")) {
+  if (blastText && containsWord(blastText, "high")) {
     return BLAST_RADIUS.high;
   }
 
   if (
-    containsWord(blastText, "low") ||
+    blastText && containsWord(blastText, "low")
+  ) {
+    return BLAST_RADIUS.low;
+  }
+
+  if (blastText && containsWord(blastText, "medium")) {
+    return BLAST_RADIUS.medium;
+  }
+
+  if (normalized.includes("multiple business transactions")) {
+    return BLAST_RADIUS.high;
+  }
+
+  if (
     normalized.includes("single service only") ||
     normalized.includes("isolated to one service")
   ) {

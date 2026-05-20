@@ -28,12 +28,18 @@ function normalizeAttrs(attributes: Attrs): Attrs {
   const service = typeof normalized.service === "string" ? normalized.service : undefined;
   const serviceName = typeof normalized["service.name"] === "string" ? normalized["service.name"] : undefined;
 
-  if (service && !serviceName) {
-    normalized["service.name"] = service;
-  }
-
   if (serviceName && !service) {
     normalized.service = serviceName;
+  }
+
+  for (const resourceBackedKey of [
+    "service.name",
+    "service.namespace",
+    "deployment.environment",
+    "service.version",
+    "app.version"
+  ]) {
+    delete normalized[resourceBackedKey];
   }
 
   return normalized;

@@ -1,10 +1,9 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
+import { initRum } from "./rum";
 
-void import("./rum").then(({ initRum }) => {
-  initRum();
-});
+initRum();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

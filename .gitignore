@@ -21,6 +21,7 @@ apps/*/.vite/
 *.tfstate.*
 *.out
 infra/splunk/.object-ids.json
+codex-archive/_raw-jsonl/
 var/log/*.log
 var/log/*.out
 !var/log/.gitkeep
