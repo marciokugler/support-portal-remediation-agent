@@ -144,7 +144,9 @@ Expected result:
 
 ## Optional traffic simulators
 
-Backend traffic:
+For a manual Splunk investigation, start traffic first and leave the scenario in `current` mode. Then click `Trigger Cache Pressure` yourself from the portal or operator console.
+
+Backend API traffic:
 
 ```bash
 npm run simulate:traffic
@@ -160,6 +162,16 @@ Browser traffic:
 
 ```bash
 RUM_SIMULATOR_USERS=5 RUM_SIMULATOR_ROUNDS=10 npm run simulate:rum
+```
+
+Presenter-friendly background traffic:
+
+```bash
+SIMULATOR_DURATION_SECONDS=3600 SIMULATOR_INTERVAL_MS=750 SIMULATOR_MIX=balanced npm run simulate:traffic
+```
+
+```bash
+RUM_SIMULATOR_USERS=2 RUM_SIMULATOR_ROUNDS=120 RUM_SIMULATOR_BROWSERS=chromium RUM_SIMULATOR_CONCURRENCY=1 npm run simulate:rum
 ```
 
 ## Stop conditions

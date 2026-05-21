@@ -64,9 +64,11 @@ Narrate:
 
 Keep this simple for students:
 
-- In RUM or Digital Experience, click the support portal application and look at the customer journey.
-- In APM, click the service map or service list and find `support-knowledge`.
-- In Infrastructure Monitoring, filter to the student `INSTANCE` and inspect filesystem utilization.
+1. In RUM or Digital Experience, open the support portal application and look at the `Customer Support Response` journey.
+2. In APM, open the service map or service list and find `support-knowledge`.
+3. In Infrastructure Monitoring, filter to the student `INSTANCE`.
+4. Inspect filesystem utilization for `/var/cache/support-knowledge`.
+5. Keep `Case Status Lookup` and `Knowledge Article Search` visible as healthy comparisons.
 
 Narrate:
 
@@ -77,17 +79,28 @@ Narrate:
 Use this prompt:
 
 ```text
-Investigate the Customer Support Response transaction in the demo environment over the last 15 minutes.
+Investigate the Cisco Live support portal incident over the last 15 minutes.
 
-Summarize the issue for an operations leader. Include:
+Scope the investigation to:
+- service.instance.id = $INSTANCE
+- deployment.environment = demo
+- affected journey or business transaction = Customer Support Response
+- likely service = support-knowledge
+- cache mountpoint = /var/cache/support-knowledge
+
+Use default Splunk Observability signals only: RUM or browser experience, APM service latency/error evidence, and host filesystem metrics. Do not use logs and do not invent custom metrics.
+
+Return a concise incident summary that includes:
 - whether Customer Support Response is degraded
+- whether Case Status Lookup and Knowledge Article Search remain healthy
 - the likely affected service
-- the filesystem or disk signal visible for this student instance
+- the filesystem signal for the cache mount or student instance
 - the APM evidence that supports the finding
 - confidence level
 - one narrow recommended remediation action
 
-Keep the response concise enough to paste into the remediation console.
+End with exactly this remediation recommendation if the evidence supports it:
+Recommended action: clean_service_cache.
 ```
 
 Fallback evidence if AI Assistant is unavailable:
@@ -103,9 +116,11 @@ Recommended action: clean_service_cache.
 
 In the operator console:
 
-1. paste the summary into `Paste Splunk AI Assistant Summary`
-2. click `Open Incident From Evidence`
-3. review the evidence handoff and policy panels
+1. paste the summary into `Evidence Intake`
+2. click `Create Incident`
+3. click `Explain`
+4. click `Propose`
+5. review the evidence handoff, policy, and validation panels
 
 Narrate:
 

@@ -118,7 +118,9 @@ Then:
 4. Look for support-knowledge latency and filesystem utilization for the student `INSTANCE`.
 5. Copy the Splunk AI Assistant or Troubleshooting Agent summary.
 6. Paste it into the operator console.
-7. Click `Open Incident From Evidence`.
+7. Click `Create Incident`.
+8. Click `Explain`.
+9. Click `Propose`.
 
 ## 10. Complete the remediation story
 
