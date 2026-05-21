@@ -136,9 +136,9 @@ Expected result:
 
 1. move to the operator console
 2. paste the Splunk AI Assistant or Troubleshooting Agent summary
-3. click `Open Incident From Evidence`
-4. review evidence and policy
-5. click proposal/action controls
+3. click `Create Incident`
+4. click `Explain`
+5. click `Propose`
 6. approve `clean_service_cache`
 7. verify recovery
 
@@ -148,6 +148,12 @@ Backend traffic:
 
 ```bash
 npm run simulate:traffic
+```
+
+Cache-pressure backend traffic:
+
+```bash
+SIMULATOR_SCENARIO=cache-disk-pressure SIMULATOR_RESET_AFTER_RUN=true npm run simulate:traffic
 ```
 
 Browser traffic:

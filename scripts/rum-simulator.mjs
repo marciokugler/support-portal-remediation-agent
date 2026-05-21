@@ -2,7 +2,7 @@
 
 import { chromium, firefox, webkit } from "playwright";
 
-const appUrl = process.env.RUM_SIMULATOR_URL ?? "http://localhost:5173";
+const appUrl = process.env.RUM_SIMULATOR_URL ?? "http://127.0.0.1:18080";
 const users = Number.parseInt(process.env.RUM_SIMULATOR_USERS ?? "5", 10);
 const rounds = Number.parseInt(process.env.RUM_SIMULATOR_ROUNDS ?? "6", 10);
 const thinkTimeMs = Number.parseInt(process.env.RUM_SIMULATOR_THINK_TIME_MS ?? "7000", 10);
@@ -80,7 +80,7 @@ async function runUser(userNumber, roundNumber) {
   await page.getByRole("button", { name: "Check Case Status" }).click();
   await page.waitForTimeout(thinkTimeMs);
 
-  await page.getByRole("button", { name: "Search Knowledge Articles" }).click();
+  await page.getByRole("button", { name: "Search Articles" }).click();
   await page.waitForTimeout(3000);
 
   const elapsedMs = Date.now() - startedAt;

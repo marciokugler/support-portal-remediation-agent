@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
-const baseUrl = process.env.SIMULATOR_BASE_URL ?? "http://127.0.0.1:4000";
+const baseUrl = process.env.SIMULATOR_BASE_URL ?? "http://127.0.0.1:18100";
+const scenarioControllerUrl = process.env.SIMULATOR_SCENARIO_CONTROLLER_URL ?? "http://127.0.0.1:18104";
+const scenarioMode = process.env.SIMULATOR_SCENARIO ?? "current";
+const resetScenarioAfterRun = process.env.SIMULATOR_RESET_AFTER_RUN === "true";
 const durationSeconds = Number.parseInt(process.env.SIMULATOR_DURATION_SECONDS ?? "120", 10);
 const intervalMs = Number.parseInt(process.env.SIMULATOR_INTERVAL_MS ?? "500", 10);
 const mix = process.env.SIMULATOR_MIX ?? "support-heavy";
@@ -60,6 +63,21 @@ async function fireArticleSearch() {
   return fetch(`${baseUrl}/api/articles/search?q=${encodeURIComponent(articleQuery)}`);
 }
 
+async function setScenario(mode) {
+  if (mode === "current") {
+    return;
+  }
+
+  const path = mode === "healthy" ? "/scenario/reset" : `/scenario/activate/${encodeURIComponent(mode)}`;
+  const response = await fetch(`${scenarioControllerUrl}${path}`, {
+    method: "POST"
+  });
+
+  if (!response.ok) {
+    throw new Error(`Scenario request failed with status ${response.status}`);
+  }
+}
+
 async function runOneRequest() {
   const transaction = pickTransaction();
   const started = Date.now();
@@ -100,6 +118,8 @@ async function main() {
   console.log(
     JSON.stringify({
       baseUrl,
+      scenarioControllerUrl,
+      scenarioMode,
       durationSeconds,
       intervalMs,
       mix
@@ -112,4 +132,11 @@ async function main() {
   }
 }
 
-await main();
+try {
+  await setScenario(scenarioMode);
+  await main();
+} finally {
+  if (resetScenarioAfterRun) {
+    await setScenario("healthy");
+  }
+}
