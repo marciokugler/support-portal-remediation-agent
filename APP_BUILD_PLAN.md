@@ -14,13 +14,13 @@ The app should be small enough to build quickly and rehearse repeatedly, but str
 
 ## Product Shape
 
-The app is an AI-powered support portal with three business transactions:
+The app is an AI-powered claims portal with three business transactions:
 
-- `Customer Support Response`
-- `Case Status Lookup`
-- `Knowledge Article Search`
+- `AI Claim Status`
+- `Policy Coverage Lookup`
+- `Claims FAQ Search`
 
-Only `Customer Support Response` is intentionally affected by the live incident. The other two remain healthy so the demo can show how business transactions, endpoint grouping, and dashboards isolate the affected workflow.
+Only `AI Claim Status` is intentionally affected by the live incident. The other two remain healthy so the demo can show how business transactions, endpoint grouping, and dashboards isolate the affected workflow.
 
 ## Service Architecture
 
@@ -35,7 +35,7 @@ Technology:
 Responsibilities:
 
 - customer-facing SPA
-- route transitions for support, case status, and search
+- route transitions for claim status, policy coverage, and FAQ search
 - hidden link or separate route to operator console if useful during development
 - Splunk RUM, DEA, and optional Session Replay
 
@@ -69,7 +69,7 @@ Technology:
 
 Responsibilities:
 
-- AI workflow orchestration for `Customer Support Response`
+- AI workflow orchestration for `AI Claim Status`
 - downstream calls to knowledge service
 - business attributes on spans
 
@@ -82,7 +82,7 @@ Technology:
 
 Responsibilities:
 
-- support `Case Status Lookup`
+- support `Policy Coverage Lookup`
 - remain healthy during the primary incident
 
 ### Knowledge Service
@@ -94,8 +94,8 @@ Technology:
 
 Responsibilities:
 
-- support `Knowledge Article Search`
-- serve as the dependency used by `Customer Support Response`
+- support `Claims FAQ Search`
+- serve as the dependency used by `AI Claim Status`
 - support failure injection
 
 ### Remediation Orchestrator
@@ -165,9 +165,9 @@ Responsibilities:
 
 Define at least three business transactions:
 
-- `Customer Support Response`
-- `Case Status Lookup`
-- `Knowledge Article Search`
+- `AI Claim Status`
+- `Policy Coverage Lookup`
+- `Claims FAQ Search`
 
 ### Transaction rules
 
@@ -187,9 +187,9 @@ Recommended root span attributes:
 
 Recommended values:
 
-- `app.business_transaction=customer_support_response`
-- `app.business_transaction=case_status_lookup`
-- `app.business_transaction=knowledge_article_search`
+- `app.business_transaction=claim_status_response`
+- `app.business_transaction=policy_coverage_lookup`
+- `app.business_transaction=claims_faq_search`
 
 ### Endpoint and URL grouping
 
@@ -207,17 +207,17 @@ If request parameters are introduced later, grouping should prevent endpoint exp
 
 Primary incident:
 
-- fill the cache volume used by the support knowledge service
-- `Customer Support Response` latency and errors rise
-- `Case Status Lookup` stays healthy
-- `Knowledge Article Search` stays healthy because it does not exercise the same retrieval path in the staged flow
+- fill the cache volume used by the claims knowledge service
+- `AI Claim Status` latency and errors rise
+- `Policy Coverage Lookup` stays healthy
+- `Claims FAQ Search` stays healthy because it does not exercise the same retrieval path in the staged flow
 
 This creates a visible, explainable signal chain:
 
 - customer-facing degradation in RUM and business transactions
-- backend latency in APM on the support knowledge path
+- backend latency in APM on the claims knowledge path
 - filesystem pressure in Infrastructure Monitoring from collector host metrics
-- a bounded `clean_service_cache` remediation action
+- a bounded `clean_claims_knowledge_cache` remediation action
 
 ## API Contracts
 

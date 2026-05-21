@@ -23,21 +23,21 @@ import "./App.css";
 
 const transactionDefinitions = [
   {
-    id: "customer_support_response",
-    name: "Customer Support Response",
-    detail: "AI-generated support response backed by the knowledge service.",
+    id: "claim_status_response",
+    name: "AI Claim Status",
+    detail: "AI-generated claim status response backed by the claims knowledge service.",
     icon: MessageSquareText
   },
   {
-    id: "case_status_lookup",
-    name: "Case Status Lookup",
+    id: "policy_coverage_lookup",
+    name: "Policy Coverage Lookup",
     detail: "Independent transaction kept healthy during the primary incident.",
     icon: FileSearch
   },
   {
-    id: "knowledge_article_search",
-    name: "Knowledge Article Search",
-    detail: "Search remains available while the support response path absorbs the cache pressure incident.",
+    id: "claims_faq_search",
+    name: "Claims FAQ Search",
+    detail: "FAQ search remains available while the claim status path absorbs the cache pressure incident.",
     icon: BookOpenText
   }
 ];
@@ -97,9 +97,11 @@ function IconButton({
 
 export function App() {
   const { apiBaseUrl, scenarioControllerBaseUrl } = currentBrowserAppConfig();
-  const [supportPrompt, setSupportPrompt] = useState("My support portal is slow and I need help understanding why.");
-  const [caseId, setCaseId] = useState("CASE-1024");
-  const [articleQuery, setArticleQuery] = useState("reset password");
+  const [supportPrompt, setSupportPrompt] = useState(
+    "My auto claim status has not updated and I need to know what is delaying payment."
+  );
+  const [caseId, setCaseId] = useState("POL-4821");
+  const [articleQuery, setArticleQuery] = useState("rental reimbursement deductible");
   const [result, setResult] = useState("Choose a transaction to see live API output.");
   const [activeScenario, setActiveScenario] = useState("healthy");
   const [scenarioMessage, setScenarioMessage] = useState("No scenario active.");
@@ -113,7 +115,7 @@ export function App() {
   const transactionHealth = useMemo(
     () =>
       transactionDefinitions.map((transaction) => {
-        const isPrimary = transaction.id === "customer_support_response";
+        const isPrimary = transaction.id === "claim_status_response";
         const status = isPrimary && isIncidentActive ? "At risk" : "Healthy";
         return {
           ...transaction,
@@ -153,15 +155,15 @@ export function App() {
   }
 
   async function callSupportResponse() {
-    await runAction("support", "Submitting support response transaction", async () => {
+    await runAction("support", "Submitting AI claim status transaction", async () => {
       const payload = await trackBusinessTransaction(
-        "customer_support_response",
-        "support_question_submit",
+        "claim_status_response",
+        "claim_status_submit",
         {
-          "app.business_transaction": "customer_support_response",
-          "app.transaction_name": "Customer Support Response",
+          "app.business_transaction": "claim_status_response",
+          "app.transaction_name": "AI Claim Status",
           "app.active_scenario": activeScenario,
-          "app.ui_surface": "support_portal"
+          "app.ui_surface": "claims_portal"
         },
         async () => {
           const response = await fetch(`${apiBaseUrl}/api/support/respond`, {
@@ -171,7 +173,7 @@ export function App() {
           });
 
           if (!response.ok) {
-            throw new Error(`Support response request failed with status ${response.status}`);
+            throw new Error(`Claim status request failed with status ${response.status}`);
           }
 
           return response.json();
@@ -183,20 +185,20 @@ export function App() {
   }
 
   async function callCaseLookup() {
-    await runAction("case", "Checking case status transaction", async () => {
+    await runAction("case", "Checking policy coverage transaction", async () => {
       const payload = await trackBusinessTransaction(
-        "case_status_lookup",
-        "case_lookup",
+        "policy_coverage_lookup",
+        "policy_coverage_lookup",
         {
-          "app.business_transaction": "case_status_lookup",
-          "app.transaction_name": "Case Status Lookup",
+          "app.business_transaction": "policy_coverage_lookup",
+          "app.transaction_name": "Policy Coverage Lookup",
           "app.active_scenario": activeScenario,
-          "app.ui_surface": "support_portal"
+          "app.ui_surface": "claims_portal"
         },
         async () => {
           const response = await fetch(`${apiBaseUrl}/api/cases/${encodeURIComponent(caseId)}`);
           if (!response.ok) {
-            throw new Error(`Case lookup failed with status ${response.status}`);
+            throw new Error(`Policy coverage lookup failed with status ${response.status}`);
           }
           return response.json();
         }
@@ -207,20 +209,20 @@ export function App() {
   }
 
   async function callArticleSearch() {
-    await runAction("article", "Searching knowledge article transaction", async () => {
+    await runAction("article", "Searching claims FAQ transaction", async () => {
       const payload = await trackBusinessTransaction(
-        "knowledge_article_search",
-        "knowledge_search",
+        "claims_faq_search",
+        "claims_faq_search",
         {
-          "app.business_transaction": "knowledge_article_search",
-          "app.transaction_name": "Knowledge Article Search",
+          "app.business_transaction": "claims_faq_search",
+          "app.transaction_name": "Claims FAQ Search",
           "app.active_scenario": activeScenario,
-          "app.ui_surface": "support_portal"
+          "app.ui_surface": "claims_portal"
         },
         async () => {
           const response = await fetch(`${apiBaseUrl}/api/articles/search?q=${encodeURIComponent(articleQuery)}`);
           if (!response.ok) {
-            throw new Error(`Knowledge search failed with status ${response.status}`);
+            throw new Error(`Claims FAQ search failed with status ${response.status}`);
           }
           return response.json();
         }
@@ -273,9 +275,9 @@ export function App() {
             <Sparkles size={16} aria-hidden="true" />
             Cisco Live demo environment
           </span>
-          <h1>AI Support Portal</h1>
+          <h1>AI Claims Portal</h1>
           <p>
-            Customer-facing workflow for demonstrating real user impact, business transaction isolation, and
+            Customer-facing insurance workflow for demonstrating claim status impact, transaction isolation, and
             observable recovery during a live incident.
           </p>
         </div>
@@ -341,18 +343,18 @@ export function App() {
           <div className="section-heading">
             <div>
               <span className="section-kicker">Primary customer journey</span>
-              <h2>Customer Support Response</h2>
+              <h2>AI Claim Status</h2>
             </div>
             <span className={`status-pill ${isIncidentActive ? "status-risk" : "status-healthy"}`}>
               {isIncidentActive ? "At risk" : "Healthy"}
             </span>
           </div>
           <p className="panel-copy">
-            Ask the AI assistant a support question. When the cache pressure scenario is active, this transaction
+            Ask the AI assistant about a claim. When the cache pressure scenario is active, this transaction
             demonstrates the degraded journey while adjacent workflows continue to respond.
           </p>
           <label className="field-label" htmlFor="support-prompt">
-            Customer question
+            Claim question
           </label>
           <textarea
             id="support-prompt"
@@ -368,9 +370,9 @@ export function App() {
               disabled={busyAction !== null}
               variant="primary"
             >
-              Submit Support Question
+              Submit Claim Status
             </IconButton>
-            <span>Trace attribute: customer_support_response</span>
+            <span>Trace attribute: claim_status_response</span>
           </div>
         </article>
 
@@ -378,11 +380,11 @@ export function App() {
           <article className="compact-panel">
             <div className="compact-title">
               <FileSearch size={20} aria-hidden="true" />
-              <h3>Case Status Lookup</h3>
+              <h3>Policy Coverage Lookup</h3>
             </div>
-            <p>Validate a separate customer journey while the support response is degraded.</p>
+            <p>Validate a separate customer journey while the claim status response is degraded.</p>
             <label className="field-label" htmlFor="case-id">
-              Case ID
+              Policy ID
             </label>
             <input
               id="case-id"
@@ -391,16 +393,16 @@ export function App() {
               onChange={(event) => setCaseId(event.target.value)}
             />
             <IconButton icon={ArrowRight} onClick={callCaseLookup} disabled={busyAction !== null}>
-              Check Case Status
+              Check Coverage
             </IconButton>
           </article>
 
           <article className="compact-panel">
             <div className="compact-title">
               <BookOpenText size={20} aria-hidden="true" />
-              <h3>Knowledge Search</h3>
+              <h3>Claims FAQ Search</h3>
             </div>
-            <p>Confirm knowledge search is still callable while the primary support workflow slows down.</p>
+            <p>Confirm FAQ search is still callable while the primary claim status workflow slows down.</p>
             <label className="field-label" htmlFor="article-query">
               Search query
             </label>
@@ -411,7 +413,7 @@ export function App() {
               onChange={(event) => setArticleQuery(event.target.value)}
             />
             <IconButton icon={Search} onClick={callArticleSearch} disabled={busyAction !== null}>
-              Search Articles
+              Search FAQ
             </IconButton>
           </article>
         </aside>

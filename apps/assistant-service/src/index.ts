@@ -13,10 +13,10 @@ import {
 } from "@ibobs/telemetry";
 
 export const assistantService = {
-  name: "support-assistant",
+  name: "claims-assistant",
   businessTransaction: BUSINESS_TRANSACTIONS.customerSupportResponse,
   telemetry: buildTelemetryAttributes(BUSINESS_TRANSACTIONS.customerSupportResponse),
-  operations: ["support.request.validate", "assistant.compose_response", "knowledge.fetch_context"]
+  operations: ["claim.request.validate", "assistant.compose_response", "claims_knowledge.fetch_context"]
 };
 
 const knowledgeServiceBaseUrl = localServiceUrl(process.env, {
@@ -62,7 +62,7 @@ export function buildServer() {
     request.log.info({ prompt }, "assistant request received");
     annotateCurrentSpan({
       ...assistantService.telemetry,
-      "support.prompt_length": prompt.length
+      "claims.prompt_length": prompt.length
     });
     const knowledgeResponse = await runInSpan(
       "assistant.knowledge_fetch_context",
@@ -97,7 +97,7 @@ export function buildServer() {
       transaction: BUSINESS_TRANSACTIONS.customerSupportResponse,
       telemetry: assistantService.telemetry,
       operations: assistantService.operations,
-      response: "Generated support response placeholder.",
+      response: "Generated AI claim status response placeholder.",
       dependency: knowledgePayload
     };
   });

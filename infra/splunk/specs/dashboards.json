@@ -5,13 +5,13 @@
     "timeRange": "-30m",
     "charts": [
       {
-        "name": "Support Portal Request Duration",
+        "name": "Claims Portal Request Duration",
         "type": "time",
         "programText": "A = data('service.request.duration.ns', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('service.instance.id', '{{instance}}')).percentile(pct=95, by=['sf_service']).publish(label='P95 Duration')",
         "grid": { "width": 6, "height": 1, "row": 0, "column": 0 }
       },
       {
-        "name": "Support Knowledge Cache Filesystem Utilization",
+        "name": "Claims Knowledge Cache Filesystem Utilization",
         "type": "single_value",
         "programText": "A = data('system.filesystem.utilization', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('service.instance.id', '{{instance}}') and filter('mountpoint', '{{cache_mountpoint}}')).max().publish(label='Cache Filesystem Utilization')",
         "grid": { "width": 6, "height": 1, "row": 0, "column": 6 }
@@ -51,7 +51,7 @@
       {
         "name": "Frontend Transaction Spans",
         "type": "time",
-        "programText": "A = data('service.request', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('sf_service', 'ibobs-support-portal')).count(by=['app.business_transaction']).publish(label='Transactions')",
+        "programText": "A = data('service.request', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('sf_service', 'ibobs-claims-portal')).count(by=['app.business_transaction']).publish(label='Transactions')",
         "grid": { "width": 6, "height": 1, "row": 0, "column": 6 }
       }
     ]
@@ -74,7 +74,7 @@
         "grid": { "width": 6, "height": 1, "row": 0, "column": 6 }
       },
       {
-        "name": "Support Knowledge Cache Filesystem Utilization",
+        "name": "Claims Knowledge Cache Filesystem Utilization",
         "type": "time",
         "programText": "A = data('system.filesystem.utilization', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('service.instance.id', '{{instance}}') and filter('mountpoint', '{{cache_mountpoint}}')).max().publish(label='Cache Filesystem Utilization')",
         "grid": { "width": 12, "height": 1, "row": 1, "column": 0 }

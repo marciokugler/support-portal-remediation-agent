@@ -50,7 +50,7 @@ variable "filesystem_utilization_threshold" {
 
 variable "cache_mountpoint" {
   type    = string
-  default = "/var/cache/support-knowledge"
+  default = "/var/cache/claims-knowledge"
 }
 
 variable "apm_latency_threshold_ns" {

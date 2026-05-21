@@ -69,7 +69,7 @@ This starts:
 - API gateway on `18100`
 - remediation orchestrator on `18110`
 - remediation agent on `18800`
-- support portal on `18080`
+- claims portal on `18080`
 - operator console on `18081`
 
 ### 6. Verify key local endpoints
@@ -94,10 +94,10 @@ curl -i http://127.0.0.1:18800/agent/health
 
 Before failure injection:
 
-1. Open the support portal.
-2. Execute `Customer Support Response`.
-3. Execute `Case Status Lookup`.
-4. Execute `Knowledge Article Search`.
+1. Open the claims portal.
+2. Execute `AI Claim Status`.
+3. Execute `Policy Coverage Lookup`.
+4. Execute `Claims FAQ Search`.
 
 What you want to prove:
 
@@ -119,16 +119,16 @@ Confirm:
 
 Click `Trigger Cache Pressure`.
 
-The scenario fills the support-knowledge cache directory up to `SUPPORT_KNOWLEDGE_CACHE_QUOTA_BYTES`. In Docker Compose, that directory is also a shared bounded tmpfs volume mounted into the collector, so Splunk host filesystem metrics see real pressure without risking the host disk.
+The scenario fills the claims-knowledge cache directory up to `CLAIMS_KNOWLEDGE_CACHE_QUOTA_BYTES`. In Docker Compose, that directory is also a shared bounded tmpfs volume mounted into the collector, so Splunk host filesystem metrics see real pressure without risking the host disk.
 
 ### 10. Reproduce the degraded transaction
 
-Run `Customer Support Response` again.
+Run `AI Claim Status` again.
 
 Expected result:
 
-- support response latency increases
-- `support-knowledge` APM duration increases
+- claim status response latency increases
+- `claims-knowledge` APM duration increases
 - filesystem utilization rises for the student instance
 - the other two transactions remain usable
 
@@ -139,7 +139,7 @@ Expected result:
 3. click `Create Incident`
 4. click `Explain`
 5. click `Propose`
-6. approve `clean_service_cache`
+6. approve `clean_claims_knowledge_cache`
 7. verify recovery
 
 ## Optional traffic simulators
@@ -178,8 +178,8 @@ RUM_SIMULATOR_USERS=2 RUM_SIMULATOR_ROUNDS=120 RUM_SIMULATOR_BROWSERS=chromium R
 
 Do not move into the live workshop until these are true:
 
-- support portal works
+- claims portal works
 - operator console works
 - baseline journeys run
 - cache pressure can be triggered
-- `clean_service_cache` can be approved and validated
+- `clean_claims_knowledge_cache` can be approved and validated

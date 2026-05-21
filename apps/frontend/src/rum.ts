@@ -15,7 +15,7 @@ export function initRum() {
     return;
   }
 
-  const config = buildRumConfig("ibobs-support-portal");
+  const config = buildRumConfig("ibobs-claims-portal");
   const appConfig = currentBrowserAppConfig();
   if (!config.rumTokenConfigured) {
     console.info("[telemetry:frontend] RUM disabled:", config.deactivatedReason);
@@ -35,7 +35,7 @@ export function initRum() {
         propagateTraceHeaderCorsUrls: appConfig.tracePropagationUrls,
         applyCustomAttributesOnSpan(span) {
           span.setAttributes({
-            "app.frontend_surface": "support_portal",
+            "app.frontend_surface": "claims_portal",
             "app.rum_to_apm_candidate": true
           });
         }
@@ -50,7 +50,7 @@ export function initRum() {
   });
 
   SplunkRum.setGlobalAttributes({
-    "app.name": "ibobs-support-portal",
+    "app.name": "ibobs-claims-portal",
     "app.demo": "ibobs-2002",
     "app.session_type": "customer-facing",
     "deployment.environment": config.deploymentEnvironment

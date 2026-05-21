@@ -20,11 +20,28 @@ function matchFirst(text: string, patterns: RegExp[]) {
 
 function normalizeTransaction(text: string) {
   const value = text.toLowerCase();
-  if (value.includes("case_status_lookup") || value.includes("case status")) {
+  if (
+    value.includes(BUSINESS_TRANSACTIONS.caseStatusLookup) ||
+    value.includes(BUSINESS_TRANSACTIONS.legacyCaseStatusLookup) ||
+    value.includes("policy coverage") ||
+    value.includes("case status")
+  ) {
     return BUSINESS_TRANSACTIONS.caseStatusLookup;
   }
-  if (value.includes("knowledge_article_search") || value.includes("knowledge article search")) {
+  if (
+    value.includes(BUSINESS_TRANSACTIONS.knowledgeArticleSearch) ||
+    value.includes(BUSINESS_TRANSACTIONS.legacyKnowledgeArticleSearch) ||
+    value.includes("claims faq") ||
+    value.includes("knowledge article search")
+  ) {
     return BUSINESS_TRANSACTIONS.knowledgeArticleSearch;
+  }
+  if (
+    value.includes(BUSINESS_TRANSACTIONS.customerSupportResponse) ||
+    value.includes(BUSINESS_TRANSACTIONS.legacyCustomerSupportResponse) ||
+    value.includes("ai claim status")
+  ) {
+    return BUSINESS_TRANSACTIONS.customerSupportResponse;
   }
   return BUSINESS_TRANSACTIONS.customerSupportResponse;
 }
@@ -40,9 +57,9 @@ function inferTransaction(text: string) {
   }
 
   const normalized = text.toLowerCase();
-  return normalized.includes("case")
+  return normalized.includes("policy") || normalized.includes("case")
     ? BUSINESS_TRANSACTIONS.caseStatusLookup
-    : normalized.includes("search")
+    : normalized.includes("faq") || normalized.includes("search")
       ? BUSINESS_TRANSACTIONS.knowledgeArticleSearch
       : BUSINESS_TRANSACTIONS.customerSupportResponse;
 }
@@ -52,7 +69,9 @@ function inferCandidateActions(text: string) {
   const actions = new Set<string>();
 
   if (
+    normalized.includes("clean_claims_knowledge_cache") ||
     normalized.includes("clean_service_cache") ||
+    normalized.includes("clean claims knowledge cache") ||
     normalized.includes("clean service cache") ||
     normalized.includes("clean the cache") ||
     normalized.includes("cache cleanup") ||
@@ -87,6 +106,7 @@ function inferConfidence(text: string) {
     normalized.includes("disk utilization") ||
     normalized.includes("filesystem utilization") ||
     normalized.includes("traceid:") ||
+    normalized.includes("claims-knowledge") ||
     normalized.includes("support-knowledge")
   ) {
     return "high";
@@ -110,7 +130,7 @@ function buildLikelyCauseSummary(text: string) {
   ]);
   const slowDependency = matchFirst(text, [
     /slow dependencies or services:\s*([^\n]+)/i,
-    /service:\s*(support-[^\n]+)/i
+    /service:\s*((?:claims|support)-[^\n]+)/i
   ]);
   const latencyEvidence = matchFirst(text, [
     /latency evidence:\s*([^\n]+)/i,

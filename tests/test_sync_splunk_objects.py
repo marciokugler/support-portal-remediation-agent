@@ -50,7 +50,7 @@ class SyncSplunkObjectsTests(unittest.TestCase):
         payloads = MODULE.build_payloads(render_context())
 
         latency_detector = next(
-            detector for detector in payloads["detectors"] if detector["key"] == "support_knowledge_filesystem_pressure"
+            detector for detector in payloads["detectors"] if detector["key"] == "claims_knowledge_filesystem_pressure"
         )
         self.assertEqual(
             latency_detector["rule"]["runbookUrl"],
@@ -70,7 +70,7 @@ class SyncSplunkObjectsTests(unittest.TestCase):
         state = {
             "dashboard_group": {"default": {"id": "group-1"}},
             "dashboards": {"executive_story": {"id": "dash-1"}},
-            "detectors": {"support_knowledge_filesystem_pressure": {"id": "det-1"}},
+            "detectors": {"claims_knowledge_filesystem_pressure": {"id": "det-1"}},
         }
         calls = []
 
@@ -91,7 +91,7 @@ class SyncSplunkObjectsTests(unittest.TestCase):
         self.assertEqual(calls[1][0], "PUT")
         self.assertEqual(calls[1][1], "/v2/dashboard/dash-1")
         self.assertEqual(calls[-1][0], "POST")
-        self.assertIn("support_knowledge_error_rate", updated_state["detectors"])
+        self.assertIn("claims_knowledge_error_rate", updated_state["detectors"])
 
     def test_specs_are_valid_json(self):
         specs_dir = Path(__file__).resolve().parents[1] / "infra" / "splunk" / "specs"

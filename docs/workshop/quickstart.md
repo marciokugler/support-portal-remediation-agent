@@ -9,7 +9,7 @@ At the end of this flow you should have:
 - the docs site running locally
 - the app stack running locally
 - optional collector telemetry running
-- the support portal and operator console reachable
+- the claims portal and operator console reachable
 - a healthy starting state
 - a deterministic cache-pressure incident
 - a clear path through approval and recovery
@@ -94,16 +94,16 @@ Expected result:
 
 ## 7. Open the two main UIs
 
-- support portal: `http://127.0.0.1:18080`
+- claims portal: `http://127.0.0.1:18080`
 - operator console: `http://127.0.0.1:18081`
 
 ## 8. Establish a healthy baseline
 
 Before showing a fault:
 
-1. Run `Customer Support Response`.
-2. Run `Case Status Lookup`.
-3. Run `Knowledge Article Search`.
+1. Run `AI Claim Status`.
+2. Run `Policy Coverage Lookup`.
+3. Run `Claims FAQ Search`.
 4. Confirm the operator console has no stale incident blocking the flow.
 
 ## 9. Trigger the incident
@@ -112,10 +112,10 @@ Use `Trigger Cache Pressure` from the portal or operator console.
 
 Then:
 
-1. Run `Customer Support Response` again.
+1. Run `AI Claim Status` again.
 2. Keep the other two transactions as healthy comparisons.
 3. Open Splunk APM and Infrastructure Monitoring.
-4. Look for support-knowledge latency and filesystem utilization for the student `INSTANCE`.
+4. Look for claims-knowledge latency and filesystem utilization for the student `INSTANCE`.
 5. Copy the Splunk AI Assistant or Troubleshooting Agent summary.
 6. Paste it into the operator console.
 7. Click `Create Incident`.
@@ -131,7 +131,7 @@ The intended live sequence is:
 3. Paste copied Splunk evidence into the operator console.
 4. Walk through orchestrator evidence and confidence.
 5. Show approval-required policy.
-6. Propose `clean_service_cache`.
+6. Propose `clean_claims_knowledge_cache`.
 7. Approve the action.
 8. Verify recovery.
 

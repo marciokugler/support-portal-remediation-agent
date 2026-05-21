@@ -23,7 +23,7 @@ receivers:
         include_mount_points:
           match_type: strict
           mount_points:
-            - /var/cache/support-knowledge
+            - /var/cache/claims-knowledge
         metrics:
           system.filesystem.utilization:
             enabled: true

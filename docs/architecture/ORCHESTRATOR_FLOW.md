@@ -6,7 +6,7 @@ The remediation orchestrator is the governance layer between Splunk investigatio
 
 ## Flow
 
-1. Cache pressure degrades `Customer Support Response`.
+1. Cache pressure degrades `AI Claim Status`.
 2. Presenter investigates in Splunk using RUM, APM, and host filesystem signals.
 3. Presenter copies the AI Assistant or Troubleshooting Agent summary.
 4. Operator pastes the summary into the operator console.
@@ -18,7 +18,7 @@ The remediation orchestrator is the governance layer between Splunk investigatio
 10. Orchestrator builds the final `EvidenceBundle`.
 11. Policy engine determines whether remediation is eligible and which policy mode applies.
 12. Remediation agent evaluates bounded actions.
-13. Operator approves `clean_service_cache`.
+13. Operator approves `clean_claims_knowledge_cache`.
 14. Action executes and recovery is verified.
 
 The live detector webhook endpoint, `POST /webhooks/splunk/detector`, remains available as an optional automation path. The core lab does not depend on it.

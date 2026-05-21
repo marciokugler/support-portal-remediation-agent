@@ -67,13 +67,13 @@ VITE_SCENARIO_CONTROLLER_BASE_URL=http://127.0.0.1:18104
 ## 6. Cache pressure controls
 
 ```dotenv
-SUPPORT_KNOWLEDGE_CACHE_DIR=/tmp/ciscolive26-${INSTANCE}/support-knowledge-cache
-SPLUNK_CACHE_MOUNTPOINT=/var/cache/support-knowledge
-SUPPORT_KNOWLEDGE_CACHE_FILL_PERCENT=92
-SUPPORT_KNOWLEDGE_CACHE_QUOTA_BYTES=134217728
+CLAIMS_KNOWLEDGE_CACHE_DIR=/tmp/ciscolive26-${INSTANCE}/claims-knowledge-cache
+SPLUNK_CACHE_MOUNTPOINT=/var/cache/claims-knowledge
+CLAIMS_KNOWLEDGE_CACHE_FILL_PERCENT=92
+CLAIMS_KNOWLEDGE_CACHE_QUOTA_BYTES=134217728
 ```
 
-For Docker Compose, the cache directory is mounted as a shared 128 MiB tmpfs volume at `/var/cache/support-knowledge` for both `support-knowledge` and the collector. The scenario fills a real bounded filesystem without touching the host disk, and Splunk filters the detector to `SPLUNK_CACHE_MOUNTPOINT`.
+For Docker Compose, the cache directory is mounted as a shared 128 MiB tmpfs volume at `/var/cache/claims-knowledge` for both `claims-knowledge` and the collector. The scenario fills a real bounded filesystem without touching the host disk, and Splunk filters the detector to `SPLUNK_CACHE_MOUNTPOINT`.
 
 ## 7. Optional values
 

@@ -84,8 +84,8 @@ curl -s http://127.0.0.1:18103/knowledge/cache/status
 Check:
 
 - `Trigger Cache Pressure` was clicked
-- `Customer Support Response` was rerun after the scenario became active
-- `SUPPORT_KNOWLEDGE_CACHE_DIR` points at a writable lab directory
+- `AI Claim Status` was rerun after the scenario became active
+- `CLAIMS_KNOWLEDGE_CACHE_DIR` points at a writable lab directory
 
 Action:
 
@@ -105,21 +105,22 @@ Check locally first:
 
 Look for:
 
-- APM services such as `support-knowledge`, `support-assistant`, and `remediation-agent`
+- APM services such as `claims-knowledge`, `claims-assistant`, and `remediation-agent`
 - host filesystem metric `system.filesystem.utilization`
 - RUM data for the portal if `VITE_SPLUNK_RUM_TOKEN` is set
 
 If RUM sessions are missing:
 
-1. confirm the portal container has `VITE_SPLUNK_SESSION_REPLAY_ENABLED=true`
+1. confirm `VITE_SPLUNK_RUM_TOKEN` is configured for the portal container
 2. restart the portal
 3. generate fresh browser traffic after the restart
-4. wait a few minutes, then use `Session Search`
+4. wait a few minutes, then use `Pages` or `Network Requests` first
+5. use `Session Search` only if session replay is enabled and new sessions were generated
 
 Useful check:
 
 ```bash
-docker compose --env-file .env -f infra/docker/docker-compose.yml exec -T frontend env | grep VITE_SPLUNK_SESSION_REPLAY_ENABLED
+docker compose --env-file .env -f infra/docker/docker-compose.yml exec -T frontend env | grep VITE_SPLUNK
 ```
 
 ## Remediation recommendation or execution is missing

@@ -13,10 +13,10 @@ function buildEvidence(overrides?: Partial<EvidenceBundle>): EvidenceBundle {
     scenarioId: "cache-disk-pressure",
     detector: {
       detectorId: "det-1",
-      detectorName: "Support Knowledge Cache Volume Pressure",
+      detectorName: "Claims Knowledge Cache Volume Pressure",
       severity: "critical",
       triggeredAt: "2026-04-08T12:00:00Z",
-      dimensions: { service: "support-knowledge", environment: "demo" }
+      dimensions: { service: "claims-knowledge", environment: "demo" }
     },
     browserExperience: {
       affectedSessions: 24,
@@ -24,8 +24,8 @@ function buildEvidence(overrides?: Partial<EvidenceBundle>): EvidenceBundle {
       affectedJourney: BUSINESS_TRANSACTIONS.customerSupportResponse
     },
     serviceImpact: {
-      affectedServices: ["support-knowledge"],
-      suspectService: "support-knowledge",
+      affectedServices: ["claims-knowledge"],
+      suspectService: "claims-knowledge",
       affectedTransactions: [BUSINESS_TRANSACTIONS.customerSupportResponse]
     },
     investigation: {

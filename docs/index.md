@@ -6,7 +6,7 @@ The goal is to get the environment running reliably, explain the architecture cl
 
 ## What this repo demonstrates
 
-- a customer-facing AI support portal
+- a customer-facing AI claims portal
 - one degraded customer journey and two healthy comparison journeys
 - Splunk RUM, APM, host filesystem metrics, and AI Agent Monitoring instrumentation
 - a remediation orchestrator that turns investigation evidence into structured policy input
@@ -35,11 +35,11 @@ Then open `http://127.0.0.1:18082/`.
 
 ## Core customer story
 
-A company launches an AI-powered support portal. During peak usage, the support knowledge cache volume fills up and degrades the `Customer Support Response` workflow. Splunk observability surfaces customer impact, service latency, and filesystem pressure. The remediation orchestrator collects evidence, applies policy, asks for approval, executes `clean_service_cache`, and verifies recovery.
+A company launches an AI-powered claims portal. During peak usage, the claims knowledge cache volume fills up and degrades the `AI Claim Status` workflow. Splunk observability surfaces customer impact, service latency, and filesystem pressure. The remediation orchestrator collects evidence, applies policy, asks for approval, executes `clean_claims_knowledge_cache`, and verifies recovery.
 
 ## Fast facts
 
-- Support portal: `http://127.0.0.1:18080`
+- Claims portal: `http://127.0.0.1:18080`
 - Operator console: `http://127.0.0.1:18081`
 - API gateway: `http://127.0.0.1:18100`
 - Assistant service: `http://127.0.0.1:18101`

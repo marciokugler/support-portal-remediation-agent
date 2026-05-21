@@ -29,11 +29,11 @@ Instrument:
 - fetch/XHR calls
 - JavaScript errors
 - custom actions:
-  - `support.query_submitted`
-  - `support.response_rendered`
+  - `claims.query_submitted`
+  - `claims.response_rendered`
   - `case.lookup_requested`
   - `article.search_requested`
-  - `support.retry_clicked`
+  - `claims.retry_clicked`
 
 Business attributes to attach where possible:
 
@@ -53,10 +53,10 @@ Use:
 
 Service naming:
 
-- `support-portal-api`
-- `support-assistant`
-- `support-case-service`
-- `support-knowledge`
+- `claims-portal-api`
+- `claims-assistant`
+- `claims-policy-service`
+- `claims-knowledge`
 - `remediation-orchestrator`
 - `remediation-agent`
 - `scenario-controller`
@@ -70,8 +70,8 @@ Resource attributes:
 
 Manual spans to add:
 
-- `support.request.validate`
-- `support.request.route`
+- `claim.request.validate`
+- `claim.request.route`
 - `assistant.compose_response`
 - `knowledge.fetch_context`
 - `case.lookup`
@@ -128,9 +128,9 @@ Low-cardinality rules:
 
 ### Required transactions
 
-- `Customer Support Response`
-- `Case Status Lookup`
-- `Knowledge Article Search`
+- `AI Claim Status`
+- `Policy Coverage Lookup`
+- `Claims FAQ Search`
 
 ### Why multiple transactions
 
@@ -154,8 +154,8 @@ Recommended naming:
 
 Example mapping:
 
-- telemetry value: `customer_support_response`
-- Splunk display: `Customer Support Response`
+- telemetry value: `claim_status_response`
+- Splunk display: `AI Claim Status`
 
 ## Default Signals
 
@@ -165,16 +165,16 @@ Primary signals:
 
 - RUM page load, route, and fetch timing
 - APM service request count, errors, and duration
-- APM traces for the customer support path
-- host metrics receiver filesystem utilization for the support knowledge cache volume
+- APM traces for the AI claim status path
+- host metrics receiver filesystem utilization for the claims knowledge cache volume
 - remediation agent spans, tool-call spans, and model-call spans
 
 Use these for:
 
 - transaction latency charts
 - transaction error charts
-- support knowledge latency charts
-- support knowledge filesystem pressure detectors
+- claims knowledge latency charts
+- claims knowledge filesystem pressure detectors
 - remediation validation status
 
 ## Affected Workflow Modeling
@@ -197,10 +197,10 @@ The service map should show two logical clusters.
 
 Customer-serving path:
 
-- `support-portal-api`
-- `support-assistant`
-- `support-case-service`
-- `support-knowledge`
+- `claims-portal-api`
+- `claims-assistant`
+- `claims-policy-service`
+- `claims-knowledge`
 
 Remediation path:
 
@@ -209,7 +209,7 @@ Remediation path:
 
 Action target:
 
-- support knowledge cache volume cleanup through the remediation agent tool
+- claims knowledge cache volume cleanup through the remediation agent tool
 
 ## Dashboards
 
@@ -255,7 +255,7 @@ Charts:
 - service map
 - top slow spans
 - suspect dependency latency
-- support knowledge filesystem utilization
+- claims knowledge filesystem utilization
 
 ### 5. Remediation Dashboard
 
@@ -284,9 +284,9 @@ Charts:
 
 Primary detectors:
 
-- `Customer Support Response` p95 latency high
-- `Customer Support Response` error rate high
-- `support-knowledge` latency high
+- `AI Claim Status` p95 latency high
+- `AI Claim Status` error rate high
+- `claims-knowledge` latency high
 - remediation validation failed
 - remediation duration too long
 
@@ -298,7 +298,7 @@ Secondary detectors:
 
 Primary webhook trigger:
 
-- business transaction latency or error detector on `Customer Support Response`
+- business transaction latency or error detector on `AI Claim Status`
 
 ## Views To Use Live
 

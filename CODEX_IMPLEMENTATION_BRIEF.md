@@ -34,13 +34,13 @@ This repository is intended to become:
 
 Must exist:
 
-- `Customer Support Response`
-- `Case Status Lookup`
-- `Knowledge Article Search`
+- `AI Claim Status`
+- `Policy Coverage Lookup`
+- `Claims FAQ Search`
 
 Demo incident:
 
-- only `Customer Support Response` should materially degrade
+- only `AI Claim Status` should materially degrade
 
 ## Required Services
 

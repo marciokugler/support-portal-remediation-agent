@@ -15,10 +15,12 @@ import {
 } from "@ibobs/telemetry";
 
 export const knowledgeService = {
-  name: "support-knowledge",
+  name: "claims-knowledge",
   supportsTransactions: [
     BUSINESS_TRANSACTIONS.customerSupportResponse,
-    BUSINESS_TRANSACTIONS.knowledgeArticleSearch
+    BUSINESS_TRANSACTIONS.knowledgeArticleSearch,
+    BUSINESS_TRANSACTIONS.legacyCustomerSupportResponse,
+    BUSINESS_TRANSACTIONS.legacyKnowledgeArticleSearch
   ],
   telemetry: buildTelemetryAttributes(BUSINESS_TRANSACTIONS.knowledgeArticleSearch),
   failureModes: ["cache-disk-pressure"]
@@ -27,10 +29,29 @@ export const knowledgeService = {
 type ScenarioMode = "healthy" | "cache-disk-pressure";
 
 let activeScenario: ScenarioMode = "healthy";
-const cacheDirectory = process.env.SUPPORT_KNOWLEDGE_CACHE_DIR ?? "/tmp/ciscolive26-support-knowledge-cache";
-const cacheFillTargetPercent = Number(process.env.SUPPORT_KNOWLEDGE_CACHE_FILL_PERCENT ?? "92");
-const cacheBlockBytes = Number(process.env.SUPPORT_KNOWLEDGE_CACHE_BLOCK_BYTES ?? 1024 * 1024);
-const cacheQuotaBytes = Number(process.env.SUPPORT_KNOWLEDGE_CACHE_QUOTA_BYTES ?? 128 * 1024 * 1024);
+const cacheDirectory =
+  process.env.CLAIMS_KNOWLEDGE_CACHE_DIR ??
+  process.env.SUPPORT_KNOWLEDGE_CACHE_DIR ??
+  "/tmp/ciscolive26-claims-knowledge-cache";
+const cacheFillTargetPercent = Number(
+  process.env.CLAIMS_KNOWLEDGE_CACHE_FILL_PERCENT ??
+    process.env.SUPPORT_KNOWLEDGE_CACHE_FILL_PERCENT ??
+    "92"
+);
+const cacheBlockBytes = Number(
+  process.env.CLAIMS_KNOWLEDGE_CACHE_BLOCK_BYTES ??
+    process.env.SUPPORT_KNOWLEDGE_CACHE_BLOCK_BYTES ??
+    1024 * 1024
+);
+const cacheQuotaBytes = Number(
+  process.env.CLAIMS_KNOWLEDGE_CACHE_QUOTA_BYTES ??
+    process.env.SUPPORT_KNOWLEDGE_CACHE_QUOTA_BYTES ??
+    128 * 1024 * 1024
+);
+const claimStatusTransactions = new Set<string>([
+  BUSINESS_TRANSACTIONS.customerSupportResponse,
+  BUSINESS_TRANSACTIONS.legacyCustomerSupportResponse
+]);
 
 async function cachePressureBytes() {
   await mkdir(cacheDirectory, { recursive: true });
@@ -83,7 +104,11 @@ async function createCachePressure() {
   await clearDemoCache();
   const block = Buffer.alloc(cacheBlockBytes, "x");
   let status = await cacheStatus();
-  const maxBlocks = Number(process.env.SUPPORT_KNOWLEDGE_CACHE_MAX_BLOCKS ?? "2048");
+  const maxBlocks = Number(
+    process.env.CLAIMS_KNOWLEDGE_CACHE_MAX_BLOCKS ??
+      process.env.SUPPORT_KNOWLEDGE_CACHE_MAX_BLOCKS ??
+      "2048"
+  );
   let blockIndex = 0;
 
   while (status.usedPercent < cacheFillTargetPercent && blockIndex < maxBlocks) {
@@ -103,7 +128,7 @@ async function createCachePressure() {
 }
 
 async function maybeDelay(transaction: string) {
-  if (activeScenario !== "cache-disk-pressure" || transaction !== BUSINESS_TRANSACTIONS.customerSupportResponse) {
+  if (activeScenario !== "cache-disk-pressure" || !claimStatusTransactions.has(transaction)) {
     return;
   }
 
@@ -114,7 +139,7 @@ async function maybeDelay(transaction: string) {
 
 function knowledgeAttributes(transaction: string) {
   const pressureAffectsTransaction =
-    activeScenario === "cache-disk-pressure" && transaction === BUSINESS_TRANSACTIONS.customerSupportResponse;
+    activeScenario === "cache-disk-pressure" && claimStatusTransactions.has(transaction);
 
   return {
     "app.business_transaction": transaction,
@@ -183,7 +208,7 @@ export function buildServer() {
     const cache = await cacheStatus();
     const cacheFullForSupport =
       activeScenario === "cache-disk-pressure" &&
-      transaction === BUSINESS_TRANSACTIONS.customerSupportResponse &&
+      claimStatusTransactions.has(transaction) &&
       cache.usedPercent >= 98;
 
     if (cacheFullForSupport) {
@@ -193,7 +218,7 @@ export function buildServer() {
         transaction,
         telemetry,
         scenario: activeScenario,
-        error: "Knowledge cache volume is full for the customer support response workflow."
+        error: "Claims knowledge cache volume is full for the AI claim status workflow."
       };
     }
 
@@ -204,9 +229,9 @@ export function buildServer() {
       telemetry,
       scenario: activeScenario,
       answer:
-        transaction === BUSINESS_TRANSACTIONS.customerSupportResponse
-          ? "Generated support answer using the knowledge service."
-          : "Knowledge lookup placeholder."
+        claimStatusTransactions.has(transaction)
+          ? "Generated claim status response using the claims knowledge service."
+          : "Claims FAQ lookup completed."
     };
   });
 

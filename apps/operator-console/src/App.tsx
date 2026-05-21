@@ -24,9 +24,9 @@ import {
 import { currentBrowserAppConfig } from "@ibobs/runtime-config/browser";
 import "./App.css";
 
-const exampleAssistantOutput = `High confidence that support-knowledge cache filesystem pressure degraded the Customer Support Response transaction.
-Disk utilization for the cache mount is above threshold and APM shows support-knowledge latency.
-Recommended action: clean_service_cache.`;
+const exampleAssistantOutput = `High confidence that claims-knowledge cache filesystem pressure degraded the AI Claim Status transaction.
+Disk utilization for the cache mount is above threshold and APM shows claims-knowledge latency.
+Recommended action: clean_claims_knowledge_cache.`;
 
 type OrchestratorResponse = {
   incident?: {
@@ -324,7 +324,7 @@ export function App() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           detectorId: "det-frontend-demo",
-          detectorName: "Support Knowledge Cache Volume Pressure",
+          detectorName: "Claims Knowledge Cache Volume Pressure",
           severity: "critical",
           triggeredAt: new Date().toISOString()
         })
@@ -611,7 +611,7 @@ export function App() {
               <h2>Scenario Controls</h2>
             </div>
           </div>
-          <p>Fill the support-knowledge cache volume before incident intake, then clean it during remediation.</p>
+          <p>Fill the claims-knowledge cache volume before incident intake, then clean it during remediation.</p>
           <div className="control-actions">
             <CommandButton
               icon={Zap}

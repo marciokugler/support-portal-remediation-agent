@@ -15,13 +15,13 @@ The separation keeps Splunk investigation, policy, model reasoning, approval, an
 
 ### `apps/frontend`
 
-Customer-facing AI support portal.
+Customer-facing AI claims portal.
 
 It demonstrates:
 
-- customer support response
-- case status lookup
-- knowledge article search
+- AI claim status
+- policy coverage lookup
+- claims FAQ search
 
 This is where the incident becomes visible first.
 
@@ -46,17 +46,17 @@ Primary backend entrypoint for the portal.
 
 ### `apps/assistant-service`
 
-Implements the support response workflow.
+Implements the claim status response workflow.
 
 ### `apps/case-service`
 
-Implements case status lookup. This remains a healthy comparison journey.
+Implements policy coverage lookup. This remains a healthy comparison journey.
 
 ### `apps/knowledge-service`
 
 Implements knowledge search and owns the bounded cache directory used by the incident scenario.
 
-When `cache-disk-pressure` is active, it fills the cache directory and slows the support response path.
+When `cache-disk-pressure` is active, it fills the cache directory and slows the claim status response path.
 
 ### `apps/scenario-controller`
 
@@ -82,7 +82,7 @@ Responsibilities:
 
 Python remediation agent with a bounded toolset and model-backed action selection.
 
-The primary action is `clean_service_cache`.
+The primary action is `clean_claims_knowledge_cache`.
 
 ## Observability layer
 
@@ -119,6 +119,6 @@ Terraform-managed Splunk dashboards, detectors, webhooks, and related objects.
 2. Splunk correlates browser, APM, and filesystem evidence
 3. the orchestrator turns investigation output into structured evidence
 4. deterministic policy decides what is allowed
-5. the remediation agent proposes `clean_service_cache`
+5. the remediation agent proposes `clean_claims_knowledge_cache`
 6. the operator approves
 7. the system validates recovery

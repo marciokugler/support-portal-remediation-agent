@@ -93,7 +93,7 @@ Agent 1:
 - Splunk AI Troubleshooting Agent
 - Splunk AI Assistant
 - correlates telemetry and change context
-- starts from user impact visible in RUM, Digital Experience Analytics, and Session Replay
+- starts from user impact visible in RUM and Digital Experience Analytics when available, then verified through APM and Infrastructure
 - explains likely cause and affected workflow
 - produces a remediation-oriented evidence package
 
@@ -113,9 +113,9 @@ Use one deterministic scenario with one main remediation path.
 
 Recommended scenario:
 
-- a critical business flow degrades because the support knowledge cache volume fills up
+- a critical business flow degrades because the claims knowledge cache volume fills up
 - browser users experience elevated latency, hesitation, and failed interactions
-- Splunk RUM, Digital Experience Analytics, and Session Replay expose the end-user impact first
+- Splunk RUM and Digital Experience Analytics can expose end-user impact first
 - business transaction health and service map show the backend path behind the failure
 - only one primary business transaction degrades while others remain healthy
 - the AI Assistant or Troubleshooting Agent pulls together the evidence
@@ -267,17 +267,17 @@ Why:
 
 Suggested user flow:
 
-1. user opens a support portal
+1. user opens a claims portal
 2. Splunk RUM starts the browser session and DEA tracks the experience
 3. user chooses one of several actions:
-   - ask support question
-   - check case status
-   - search knowledge article
+   - ask claim status question
+   - check policy coverage
+   - search claims FAQ
 4. frontend calls the backend
 5. backend routes to the appropriate transaction path
 6. failure scenario introduces latency or errors only in the support-response dependency path
 7. customer experience degrades in a visible way for one workflow
-8. DEA and Session Replay show the frustration path before the backend story is fully explained
+8. DEA can show the frustration path when RUM data is available before the backend story is fully explained
 
 If you prefer a more familiar business transaction, use a purchase or checkout flow. The architecture below still applies.
 
@@ -461,7 +461,7 @@ Only one of these should be used in the main live flow.
 
 Recommended primary live action:
 
-- `clean_service_cache`
+- `clean_claims_knowledge_cache`
 
 Why:
 
@@ -618,7 +618,7 @@ Track:
 Feature-specific highlights:
 
 - RUM and DEA for customer impact
-- Session Replay for one concrete failing user journey
+- optional Session Replay for one concrete failing user journey if available
 - multiple business transactions with one affected and two healthy
 - endpoint grouping and operation grouping for clean URL views
 - service map for app and remediation topology
@@ -717,7 +717,7 @@ Most important shape:
 type ProposedAction = {
   actionId: string;
   incidentId: string;
-  type: "clean_service_cache" | "restart_service";
+  type: "clean_claims_knowledge_cache" | "restart_service";
   target: string;
   confidenceBand: "low" | "medium" | "high";
   policyMode: "recommend_only" | "approval_required" | "auto_execute";

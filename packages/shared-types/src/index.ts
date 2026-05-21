@@ -1,11 +1,15 @@
 export const BUSINESS_TRANSACTIONS = {
-  customerSupportResponse: "customer_support_response",
-  caseStatusLookup: "case_status_lookup",
-  knowledgeArticleSearch: "knowledge_article_search"
+  customerSupportResponse: "claim_status_response",
+  caseStatusLookup: "policy_coverage_lookup",
+  knowledgeArticleSearch: "claims_faq_search",
+  legacyCustomerSupportResponse: "customer_support_response",
+  legacyCaseStatusLookup: "case_status_lookup",
+  legacyKnowledgeArticleSearch: "knowledge_article_search"
 } as const;
 
 export const ACTION_TYPES = {
-  cleanServiceCache: "clean_service_cache",
+  cleanServiceCache: "clean_claims_knowledge_cache",
+  legacyCleanServiceCache: "clean_service_cache",
   restartService: "restart_service"
 } as const;
 

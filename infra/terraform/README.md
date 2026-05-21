@@ -14,9 +14,9 @@ The preferred authoring path for dashboard and detector iteration is [infra/splu
   - service health
   - remediation operations
 - detectors:
-  - support knowledge cache filesystem pressure
-  - support knowledge APM latency
-  - support knowledge APM error rate
+  - claims knowledge cache filesystem pressure
+  - claims knowledge APM latency
+  - claims knowledge APM error rate
 
 ## Signal source
 
@@ -55,13 +55,13 @@ terraform -chdir=infra/terraform plan \
   -var="splunk_access_token=$SPLUNK_ACCESS_TOKEN" \
   -var="deployment_environment=${DEPLOYMENT_ENVIRONMENT:-demo}" \
   -var="instance=${INSTANCE:-student-001}" \
-  -var="cache_mountpoint=${SPLUNK_CACHE_MOUNTPOINT:-/var/cache/support-knowledge}" \
+  -var="cache_mountpoint=${SPLUNK_CACHE_MOUNTPOINT:-/var/cache/claims-knowledge}" \
   -var="orchestrator_webhook_url=https://demo.example/webhooks/splunk/detector"
 terraform -chdir=infra/terraform apply \
   -var="splunk_access_token=$SPLUNK_ACCESS_TOKEN" \
   -var="deployment_environment=${DEPLOYMENT_ENVIRONMENT:-demo}" \
   -var="instance=${INSTANCE:-student-001}" \
-  -var="cache_mountpoint=${SPLUNK_CACHE_MOUNTPOINT:-/var/cache/support-knowledge}" \
+  -var="cache_mountpoint=${SPLUNK_CACHE_MOUNTPOINT:-/var/cache/claims-knowledge}" \
   -var="orchestrator_webhook_url=https://demo.example/webhooks/splunk/detector"
 ```
 

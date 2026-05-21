@@ -92,7 +92,7 @@ def health() -> dict[str, str]:
 
 @app.post("/agent/evaluate")
 def evaluate(payload: EvaluateRequest) -> dict:
-    candidate_actions = payload.candidateActions or ["clean_service_cache"]
+    candidate_actions = payload.candidateActions or ["clean_claims_knowledge_cache"]
     client = openai_client()
 
     reasoning_summary = payload.likelyCause
@@ -172,10 +172,10 @@ def execute(action_id: str, payload: ActionRequest) -> dict:
     scenario_state = "unknown"
 
     try:
-        if payload.actionType == "clean_service_cache":
+        if payload.actionType in {"clean_claims_knowledge_cache", "clean_service_cache"}:
             _, response_payload = post_json(f"{scenario_controller_base_url}/scenario/reset")
             scenario_state = response_payload.get("activeScenario", "unknown")
-            notes.append("Cleaned support-knowledge cache volume through the scenario controller.")
+            notes.append("Cleaned claims-knowledge cache volume through the scenario controller.")
         elif payload.actionType == "restart_service":
             _, response_payload = post_json(f"{scenario_controller_base_url}/scenario/reset")
             scenario_state = response_payload.get("activeScenario", "unknown")
@@ -238,12 +238,12 @@ def verify(action_id: str, payload: ActionRequest) -> dict:
             started_at = time.perf_counter()
             support_request_status, _ = post_json(
                 f"{api_gateway_base_url}/api/support/respond",
-                {"prompt": "post-remediation validation"},
+                {"prompt": "post-remediation claim status validation"},
             )
             measured_latency_ms = round((time.perf_counter() - started_at) * 1000, 1)
             if support_request_status == 200 and measured_latency_ms <= validation_latency_threshold_ms:
                 status = "validated"
-                notes.append("Customer support validation request completed within threshold.")
+                notes.append("AI claim status validation request completed within threshold.")
             else:
                 notes.append("Validation request did not recover within the expected threshold.")
     except urllib.error.URLError as error:

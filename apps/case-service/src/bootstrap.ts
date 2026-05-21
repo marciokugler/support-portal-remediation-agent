@@ -1,4 +1,4 @@
 import { initSplunkNodeTelemetry } from "@ibobs/telemetry";
 
-initSplunkNodeTelemetry("support-case-service");
+initSplunkNodeTelemetry("claims-policy-service");
 void import("./index.js");

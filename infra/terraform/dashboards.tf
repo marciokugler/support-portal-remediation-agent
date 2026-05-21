@@ -22,7 +22,7 @@ resource "signalfx_dashboard" "executive_story" {
 }
 
 resource "signalfx_time_chart" "apm_service_duration" {
-  name = "Support Portal Request Duration"
+  name = "Claims Portal Request Duration"
 
   program_text = <<-EOF
     A = data('service.request.duration.ns', filter=filter('deployment.environment', '${var.deployment_environment}') and filter('service.instance.id', '${var.instance}')).percentile(pct=95, by=['sf_service']).publish(label='P95 Duration')
@@ -30,7 +30,7 @@ resource "signalfx_time_chart" "apm_service_duration" {
 }
 
 resource "signalfx_single_value_chart" "student_filesystem_utilization" {
-  name = "Support Knowledge Cache Filesystem Utilization"
+  name = "Claims Knowledge Cache Filesystem Utilization"
 
   program_text = <<-EOF
     A = data('system.filesystem.utilization', filter=filter('deployment.environment', '${var.deployment_environment}') and filter('service.instance.id', '${var.instance}') and filter('mountpoint', '${var.cache_mountpoint}')).max().publish(label='Cache Filesystem Utilization')
@@ -79,7 +79,7 @@ resource "signalfx_time_chart" "frontend_transaction_spans" {
   name = "Frontend Transaction Spans"
 
   program_text = <<-EOF
-    A = data('service.request', filter=filter('deployment.environment', '${var.deployment_environment}') and filter('sf_service', 'ibobs-support-portal')).count(by=['app.business_transaction']).publish(label='Transactions')
+    A = data('service.request', filter=filter('deployment.environment', '${var.deployment_environment}') and filter('sf_service', 'ibobs-claims-portal')).count(by=['app.business_transaction']).publish(label='Transactions')
   EOF
 }
 
@@ -117,7 +117,7 @@ resource "signalfx_time_chart" "apm_error_rate" {
 }
 
 resource "signalfx_time_chart" "host_filesystem_utilization" {
-  name = "Support Knowledge Cache Filesystem Utilization"
+  name = "Claims Knowledge Cache Filesystem Utilization"
 
   program_text = <<-EOF
     A = data('system.filesystem.utilization', filter=filter('deployment.environment', '${var.deployment_environment}') and filter('service.instance.id', '${var.instance}') and filter('mountpoint', '${var.cache_mountpoint}')).max().publish(label='Cache Filesystem Utilization')

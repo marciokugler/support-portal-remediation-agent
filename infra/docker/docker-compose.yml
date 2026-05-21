@@ -21,7 +21,7 @@ services:
       - ../otel-collector/config.yaml:/etc/otel/config.yaml:ro
       - ../../:/workspace:ro
       - /:/hostfs:ro
-      - support_knowledge_cache:/var/cache/support-knowledge:ro
+      - claims_knowledge_cache:/var/cache/claims-knowledge:ro
     ports:
       - "14317:4317"
       - "14318:4318"
@@ -174,15 +174,15 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_PROPAGATORS: tracecontext,baggage,b3
       SPLUNK_PROFILER_ENABLED: ${SPLUNK_PROFILER_ENABLED:-false}
-      SUPPORT_KNOWLEDGE_CACHE_DIR: /var/cache/support-knowledge
-      SUPPORT_KNOWLEDGE_CACHE_FILL_PERCENT: ${SUPPORT_KNOWLEDGE_CACHE_FILL_PERCENT:-92}
-      SUPPORT_KNOWLEDGE_CACHE_QUOTA_BYTES: ${SUPPORT_KNOWLEDGE_CACHE_QUOTA_BYTES:-134217728}
+      CLAIMS_KNOWLEDGE_CACHE_DIR: /var/cache/claims-knowledge
+      CLAIMS_KNOWLEDGE_CACHE_FILL_PERCENT: ${CLAIMS_KNOWLEDGE_CACHE_FILL_PERCENT:-${SUPPORT_KNOWLEDGE_CACHE_FILL_PERCENT:-92}}
+      CLAIMS_KNOWLEDGE_CACHE_QUOTA_BYTES: ${CLAIMS_KNOWLEDGE_CACHE_QUOTA_BYTES:-${SUPPORT_KNOWLEDGE_CACHE_QUOTA_BYTES:-134217728}}
     command: >
       sh -lc "npm run dev --workspace @ibobs/knowledge-service"
     volumes:
       - ../../:/workspace
       - node_modules:/workspace/node_modules
-      - support_knowledge_cache:/var/cache/support-knowledge
+      - claims_knowledge_cache:/var/cache/claims-knowledge
     ports:
       - "18103:18103"
     depends_on:
@@ -282,7 +282,7 @@ services:
 volumes:
   node_modules:
   python_venv:
-  support_knowledge_cache:
+  claims_knowledge_cache:
     driver: local
     driver_opts:
       type: tmpfs

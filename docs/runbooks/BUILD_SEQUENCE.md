@@ -23,7 +23,7 @@
 5. Scenario controller toggles state on `18104`.
 6. Splunk receives APM service metrics and host filesystem metrics.
 7. Evidence paste produces a policy result.
-8. Agent evaluation produces `clean_service_cache`.
+8. Agent evaluation produces `clean_claims_knowledge_cache`.
 9. Approval executes and validates.
 10. Terraform validates with `terraform -chdir=infra/terraform validate`.
 

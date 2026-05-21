@@ -2,9 +2,12 @@ import { BUSINESS_TRANSACTIONS } from "@ibobs/shared-types";
 import { appVersion, deploymentEnvironment, serviceNamespace } from "./config";
 
 export const businessTransactionLabels = {
-  [BUSINESS_TRANSACTIONS.customerSupportResponse]: "Customer Support Response",
-  [BUSINESS_TRANSACTIONS.caseStatusLookup]: "Case Status Lookup",
-  [BUSINESS_TRANSACTIONS.knowledgeArticleSearch]: "Knowledge Article Search"
+  [BUSINESS_TRANSACTIONS.customerSupportResponse]: "AI Claim Status",
+  [BUSINESS_TRANSACTIONS.caseStatusLookup]: "Policy Coverage Lookup",
+  [BUSINESS_TRANSACTIONS.knowledgeArticleSearch]: "Claims FAQ Search",
+  [BUSINESS_TRANSACTIONS.legacyCustomerSupportResponse]: "AI Claim Status",
+  [BUSINESS_TRANSACTIONS.legacyCaseStatusLookup]: "Policy Coverage Lookup",
+  [BUSINESS_TRANSACTIONS.legacyKnowledgeArticleSearch]: "Claims FAQ Search"
 };
 
 export function buildTelemetryAttributes(transaction: keyof typeof businessTransactionLabels | string) {

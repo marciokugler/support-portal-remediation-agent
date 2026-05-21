@@ -7,8 +7,8 @@ These exercises teach students how to use standard Splunk Observability signals 
 Students should be able to:
 
 - separate lab data with `INSTANCE` and OpenTelemetry resource attributes
-- identify the support portal journey in RUM/APM
-- find `support-knowledge` latency in APM
+- identify the claims portal journey in RUM/APM
+- find `claims-knowledge` latency in APM
 - find cache pressure through host filesystem metrics
 - inspect AI/remediation spans without turning them into a separate custom metric model
 
@@ -38,15 +38,15 @@ Shared accounts are fine for a workshop, but every participant needs a filter bo
 
 ## Exercise 2: Generate baseline signals
 
-In the support portal:
+In the claims portal:
 
-1. run `Customer Support Response`
-2. run `Case Status Lookup`
-3. run `Knowledge Article Search`
+1. run `AI Claim Status`
+2. run `Policy Coverage Lookup`
+3. run `Claims FAQ Search`
 
 In Splunk:
 
-- open APM and find services such as `support-portal-api`, `support-assistant`, and `support-knowledge`
+- open APM and find services such as `claims-portal-api`, `claims-assistant`, and `claims-knowledge`
 - open RUM or Digital Experience and inspect the portal activity if RUM is configured
 
 Discussion prompt:
@@ -61,7 +61,7 @@ Baseline traffic proves the system works and gives the degraded state something 
 
 Click `Trigger Cache Pressure`.
 
-Then run `Customer Support Response` again.
+Then run `AI Claim Status` again.
 
 Optional local checks:
 
@@ -74,7 +74,7 @@ Expected result:
 
 - scenario state is `cache-disk-pressure`
 - cache utilization rises
-- Customer Support Response gets slower
+- AI Claim Status gets slower
 
 ## Exercise 4: Find the default metrics
 
@@ -82,10 +82,10 @@ In Splunk Observability:
 
 1. Filter to the student `INSTANCE`.
 2. In Infrastructure Monitoring, find filesystem utilization.
-3. In APM, find `support-knowledge` request duration.
-4. In RUM, click `Custom Workflows` and look for `ui.Customer Support Response`.
-5. If the workflow is not visible yet, click `Network Requests` and inspect `/api/support/respond`.
-6. In APM, inspect the Customer Support Response trace path.
+3. In APM, find `claims-knowledge` request duration.
+4. In RUM, use `Pages` or `Network Requests` to confirm portal traffic if browser data is available.
+5. Open `/api/support/respond` in `Network Requests` if it appears.
+6. In APM, inspect the AI Claim Status trace path as the reliable backend proof.
 
 Signals to look for:
 
@@ -109,14 +109,14 @@ In the operator console:
 1. paste the evidence summary
 2. open the incident
 3. request a proposed action
-4. approve `clean_service_cache`
+4. approve `clean_claims_knowledge_cache`
 
 In Splunk APM or AI Agent Monitoring, inspect spans for:
 
 - `remediation-orchestrator`
 - `remediation-agent`
 - model provider call metadata, when `OPENAI_API_KEY` is set
-- action attributes such as `action.type=clean_service_cache`
+- action attributes such as `action.type=clean_claims_knowledge_cache`
 
 Discussion prompt:
 
@@ -130,14 +130,14 @@ The model can help choose a bounded action, but deterministic policy and human a
 
 After approval:
 
-1. run `Customer Support Response`
+1. run `AI Claim Status`
 2. check the operator validation panel
 3. check filesystem utilization and APM duration again
 
 Expected result:
 
 - scenario state returns to `healthy`
-- support response latency improves
+- claim status response latency improves
 - cache utilization drops or stops increasing
 
 ## Instructor notes

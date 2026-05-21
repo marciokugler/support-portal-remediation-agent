@@ -74,13 +74,13 @@ async function runUser(userNumber, roundNumber) {
     [userNumber, roundNumber, browserName]
   );
 
-  await page.getByRole("button", { name: "Submit Support Question" }).click();
+  await page.getByRole("button", { name: "Submit Claim Status" }).click();
   await page.waitForTimeout(thinkTimeMs);
 
-  await page.getByRole("button", { name: "Check Case Status" }).click();
+  await page.getByRole("button", { name: "Check Coverage" }).click();
   await page.waitForTimeout(thinkTimeMs);
 
-  await page.getByRole("button", { name: "Search Articles" }).click();
+  await page.getByRole("button", { name: "Search FAQ" }).click();
   await page.waitForTimeout(3000);
 
   const elapsedMs = Date.now() - startedAt;

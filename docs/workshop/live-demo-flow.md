@@ -24,7 +24,7 @@ Say:
 
 Show:
 
-- the support portal
+- the claims portal
 - one successful run of each transaction
 
 ### 2. Explain the application side
@@ -35,26 +35,26 @@ Say:
 
 Show:
 
-- `Customer Support Response`
-- `Case Status Lookup`
-- `Knowledge Article Search`
+- `AI Claim Status`
+- `Policy Coverage Lookup`
+- `Claims FAQ Search`
 
 ### 3. Trigger the fault
 
 Click `Trigger Cache Pressure`.
 
-Then run `Customer Support Response` again.
+Then run `AI Claim Status` again.
 
 Narrate:
 
-> We are filling a bounded cache volume used by the support knowledge service. This creates real filesystem pressure in the lab environment and slows the support response path.
+> We are filling a bounded cache volume used by the claims knowledge service. This creates real filesystem pressure in the lab environment and slows the claim status response path.
 
 ### 4. Show healthy comparison journeys
 
 Re-run:
 
-- `Case Status Lookup`
-- `Knowledge Article Search`
+- `Policy Coverage Lookup`
+- `Claims FAQ Search`
 
 Narrate:
 
@@ -64,46 +64,43 @@ Narrate:
 
 Keep this simple for students:
 
-1. In RUM or Digital Experience, open the support portal application and look at the `Customer Support Response` journey.
-2. In APM, open the service map or service list and find `support-knowledge`.
+1. In RUM or Digital Experience, open the claims portal application and confirm page or network activity if browser data is available.
+2. In APM, open the service map or service list and find `claims-knowledge`.
 3. In Infrastructure Monitoring, filter to the student `INSTANCE`.
-4. Inspect filesystem utilization for `/var/cache/support-knowledge`.
-5. Keep `Case Status Lookup` and `Knowledge Article Search` visible as healthy comparisons.
+4. Inspect filesystem utilization for `/var/cache/claims-knowledge`.
+5. Use APM and Infrastructure as the required proof path; keep `Policy Coverage Lookup` and `Claims FAQ Search` visible as healthy comparisons.
 
 Narrate:
 
 > We are not relying on logs or custom demo metrics. We are using the default signals students should expect in a real environment: browser experience, APM service health, and host filesystem metrics from the collector.
 
-RUM click path:
+Optional RUM click path:
 
 1. Open `Digital Experience`.
-2. Open the RUM application named `ibobs-support-portal`.
-3. Stay on `UX Metrics` only long enough to prove page traffic is arriving.
-4. Click `Custom Workflows`.
-5. Look for `ui.Customer Support Response`.
-6. If the workflow list is empty, click `Network Requests` and open `/api/support/respond`.
-7. Use `Session Search` only after session replay is enabled and new browser sessions have been generated.
-8. In `Session Search`, filter to the support portal app and the last 15 minutes, then open a recent session with slow `/api/support/respond` activity.
+2. Open the RUM application named `ibobs-claims-portal`.
+3. Stay on `UX Metrics` or `Pages` only long enough to prove page traffic is arriving.
+4. Click `Network Requests` and open `/api/support/respond` if it appears.
+5. Treat `Custom Workflows` and `Session Search` as optional extras only; do not depend on them for the live proof.
 
 ### 6. Ask Splunk AI Assistant for evidence
 
 Use this prompt:
 
 ```text
-Investigate the Cisco Live support portal incident over the last 15 minutes.
+Investigate the Cisco Live claims portal incident over the last 15 minutes.
 
 Scope the investigation to:
 - service.instance.id = $INSTANCE
 - deployment.environment = demo
-- affected journey or business transaction = Customer Support Response
-- likely service = support-knowledge
-- cache mountpoint = /var/cache/support-knowledge
+- affected journey or business transaction = AI Claim Status
+- likely service = claims-knowledge
+- cache mountpoint = /var/cache/claims-knowledge
 
 Use default Splunk Observability signals only: RUM or browser experience, APM service latency/error evidence, and host filesystem metrics. Do not use logs and do not invent custom metrics.
 
 Return a concise incident summary that includes:
-- whether Customer Support Response is degraded
-- whether Case Status Lookup and Knowledge Article Search remain healthy
+- whether AI Claim Status is degraded
+- whether Policy Coverage Lookup and Claims FAQ Search remain healthy
 - the likely affected service
 - the filesystem signal for the cache mount or student instance
 - the APM evidence that supports the finding
@@ -111,16 +108,16 @@ Return a concise incident summary that includes:
 - one narrow recommended remediation action
 
 End with exactly this remediation recommendation if the evidence supports it:
-Recommended action: clean_service_cache.
+Recommended action: clean_claims_knowledge_cache.
 ```
 
 Fallback evidence if AI Assistant is unavailable:
 
 ```text
-High confidence that support-knowledge cache filesystem pressure degraded the Customer Support Response transaction.
-Host filesystem utilization for the student instance is above threshold, and APM shows elevated support-knowledge request duration.
-Case Status Lookup and Knowledge Article Search remain healthy comparison journeys.
-Recommended action: clean_service_cache.
+High confidence that claims-knowledge cache filesystem pressure degraded the AI Claim Status transaction.
+Host filesystem utilization for the student instance is above threshold, and APM shows elevated claims-knowledge request duration.
+Policy Coverage Lookup and Claims FAQ Search remain healthy comparison journeys.
+Recommended action: clean_claims_knowledge_cache.
 ```
 
 ### 7. Paste the evidence
@@ -143,7 +140,7 @@ Expected direction:
 
 - confidence is high
 - policy mode is approval required
-- action is `clean_service_cache`
+- action is `clean_claims_knowledge_cache`
 
 Narrate:
 
@@ -155,11 +152,11 @@ Click the approval button when it is enabled.
 
 Narrate:
 
-> Approval calls the remediation agent. In this lab, the action clears the support-knowledge cache pressure through the scenario controller.
+> Approval calls the remediation agent. In this lab, the action clears the claims-knowledge cache pressure through the scenario controller.
 
 ### 10. Validate recovery
 
-Re-run `Customer Support Response`.
+Re-run `AI Claim Status`.
 
 Show:
 

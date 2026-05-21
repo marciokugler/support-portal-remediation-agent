@@ -11,9 +11,9 @@
 
 ## Detectors to provision as code
 
-- Support Knowledge Cache Filesystem Pressure
-- Support Knowledge APM Latency
-- Support Knowledge APM Error Rate
+- Claims Knowledge Cache Filesystem Pressure
+- Claims Knowledge APM Latency
+- Claims Knowledge APM Error Rate
 
 ## Signal source
 

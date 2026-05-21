@@ -32,10 +32,10 @@ Checklist:
 
 1. run all three portal transactions in healthy mode
 2. click `Trigger Cache Pressure`
-3. re-run `Customer Support Response`
+3. re-run `AI Claim Status`
 4. confirm the other two journeys remain usable
 5. step through the operator console
-6. approve `clean_service_cache`
+6. approve `clean_claims_knowledge_cache`
 7. validate recovery
 
 If Splunk telemetry matters for your talk, validate RUM/APM/filesystem signals in this hour.
@@ -76,7 +76,7 @@ Checklist:
 
 1. portal loads on `18080`
 2. operator console loads on `18081`
-3. one healthy support response works
+3. one healthy claim status response works
 4. cache pressure can still be triggered
 5. presenter knows the fallback narrative
 

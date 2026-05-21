@@ -80,7 +80,7 @@ Use Splunk UI, detectors, and dashboards for default signals:
 
 - APM service request metrics such as `service.request` and `service.request.duration.ns`
 - host filesystem metrics such as `system.filesystem.utilization`
-- RUM and browser spans for the support portal
+- RUM and browser spans for the claims portal
 - AI/remediation spans for agent visibility
 
 The API integration remains a lightweight enrichment hook. It should enrich context, not become the source of truth for remediation execution.

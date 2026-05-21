@@ -125,8 +125,8 @@ function attachServerTimingHeaderForRequest(
 }
 
 export function buildServer() {
-  const app = Fastify({ loggerInstance: createServiceLogger("support-portal-api") });
-  void buildNodeTelemetryConfig({ serviceName: "support-portal-api" });
+  const app = Fastify({ loggerInstance: createServiceLogger("claims-portal-api") });
+  void buildNodeTelemetryConfig({ serviceName: "claims-portal-api" });
   void app.register(cors, {
     origin: true,
     allowedHeaders: ["content-type", "traceparent", "tracestate", "baggage"],
@@ -160,16 +160,16 @@ export function buildServer() {
     );
   });
 
-  app.get("/api/health", async () => ({ status: "ok", service: "support-portal-api" }));
+  app.get("/api/health", async () => ({ status: "ok", service: "claims-portal-api" }));
 
   app.post("/api/support/respond", async (request, reply) => {
-    request.log.info({ supportRequest: request.body }, "forwarding support request");
+    request.log.info({ claimStatusRequest: request.body }, "forwarding claim status request");
     const tracer = trace.getTracer("ibobs-demo");
-    return tracer.startActiveSpan("support.gateway.support_request", async (span) => {
+    return tracer.startActiveSpan("claims.gateway.claim_status_request", async (span) => {
       annotateCurrentSpan(routes()[0].telemetry);
 
       try {
-        const downstream = await runInSpan("support.gateway.forward_support", routes()[0].telemetry, () =>
+        const downstream = await runInSpan("claims.gateway.forward_claim_status", routes()[0].telemetry, () =>
           fetch(`${assistantServiceBaseUrl}/assistant/respond`, {
             method: "POST",
             headers: {
@@ -179,7 +179,7 @@ export function buildServer() {
           })
         );
         const payload = await downstream.json();
-        request.log.info({ downstreamStatus: downstream.status, supportResponse: payload }, "support request completed");
+        request.log.info({ downstreamStatus: downstream.status, claimStatusResponse: payload }, "claim status request completed");
 
         attachServerTimingHeaderForRequest(request, reply, span.spanContext());
         span.setStatus({ code: SpanStatusCode.OK });
@@ -189,7 +189,7 @@ export function buildServer() {
         span.recordException(error as Error);
         span.setStatus({
           code: SpanStatusCode.ERROR,
-          message: error instanceof Error ? error.message : "support gateway failure"
+          message: error instanceof Error ? error.message : "claims gateway failure"
         });
         throw error;
       } finally {
@@ -200,16 +200,16 @@ export function buildServer() {
 
   app.get("/api/cases/:caseId", async (request, reply) => {
     const caseId = (request.params as { caseId: string }).caseId;
-    request.log.info({ caseId }, "looking up case");
+    request.log.info({ policyId: caseId }, "looking up policy coverage");
     annotateCurrentSpan({
       ...routes()[1].telemetry,
-      "support.case_id": caseId
+      "claims.policy_id": caseId
     });
-    const downstream = await runInSpan("support.gateway.lookup_case", routes()[1].telemetry, () =>
+    const downstream = await runInSpan("claims.gateway.lookup_policy_coverage", routes()[1].telemetry, () =>
       fetch(`${caseServiceBaseUrl}/cases/${encodeURIComponent(caseId)}`)
     );
     const payload = await downstream.json();
-    request.log.info({ caseId, downstreamStatus: downstream.status, casePayload: payload }, "case lookup completed");
+    request.log.info({ policyId: caseId, downstreamStatus: downstream.status, policyPayload: payload }, "policy coverage lookup completed");
     attachServerTimingHeaderForRequest(request, reply, trace.getActiveSpan()?.spanContext());
     reply.code(downstream.status);
     return payload;
@@ -217,12 +217,12 @@ export function buildServer() {
 
   app.get("/api/articles/search", async (request, reply) => {
     const query = (request.query as { q?: string }).q ?? "";
-    request.log.info({ query }, "searching articles");
+    request.log.info({ query }, "searching claims FAQ");
     annotateCurrentSpan({
       ...routes()[2].telemetry,
-      "knowledge.query_length": query.length
+      "claims_faq.query_length": query.length
     });
-    const downstream = await runInSpan("support.gateway.search_articles", routes()[2].telemetry, () =>
+    const downstream = await runInSpan("claims.gateway.search_faq", routes()[2].telemetry, () =>
       fetch(`${knowledgeServiceBaseUrl}/knowledge/query`, {
         method: "POST",
         headers: {
@@ -235,7 +235,7 @@ export function buildServer() {
       })
     );
     const payload = await downstream.json();
-    request.log.info({ query, downstreamStatus: downstream.status, articlePayload: payload }, "article search completed");
+    request.log.info({ query, downstreamStatus: downstream.status, faqPayload: payload }, "claims FAQ search completed");
     attachServerTimingHeaderForRequest(request, reply, trace.getActiveSpan()?.spanContext());
     reply.code(downstream.status);
     return payload;
@@ -245,7 +245,7 @@ export function buildServer() {
 }
 
 if (process.env.NODE_ENV !== "test") {
-  initSplunkNodeTelemetry("support-portal-api");
+  initSplunkNodeTelemetry("claims-portal-api");
   const port = localServicePort(process.env, "API_GATEWAY_PORT", defaultPorts.apiGateway);
   const server = buildServer();
   server.log.info({ routes: routes() }, "api-gateway scaffold ready");

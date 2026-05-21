@@ -6,19 +6,19 @@ const scenarioMode = process.env.SIMULATOR_SCENARIO ?? "current";
 const resetScenarioAfterRun = process.env.SIMULATOR_RESET_AFTER_RUN === "true";
 const durationSeconds = Number.parseInt(process.env.SIMULATOR_DURATION_SECONDS ?? "120", 10);
 const intervalMs = Number.parseInt(process.env.SIMULATOR_INTERVAL_MS ?? "500", 10);
-const mix = process.env.SIMULATOR_MIX ?? "support-heavy";
+const mix = process.env.SIMULATOR_MIX ?? "claim-heavy";
 
 const supportPrompt = {
-  prompt: "My support portal is slow and I need help understanding why."
+  prompt: "My auto claim status has not updated and I need to know what is delaying payment."
 };
 
-const articleQuery = "reset password";
-const caseId = "CASE-1024";
+const articleQuery = "rental reimbursement deductible";
+const caseId = "POL-4821";
 
 function pickTransaction() {
   const roll = Math.random();
 
-  if (mix === "support-only") {
+  if (mix === "claim-only" || mix === "support-only") {
     return "support";
   }
 
@@ -93,7 +93,8 @@ async function runOneRequest() {
     const elapsedMs = Date.now() - started;
     console.log(
       JSON.stringify({
-        transaction,
+        transaction:
+          transaction === "support" ? "claim_status" : transaction === "case" ? "policy_coverage" : "claims_faq",
         status: response.status,
         ok: response.ok,
         elapsedMs
@@ -102,7 +103,8 @@ async function runOneRequest() {
   } catch (error) {
     console.log(
       JSON.stringify({
-        transaction,
+        transaction:
+          transaction === "support" ? "claim_status" : transaction === "case" ? "policy_coverage" : "claims_faq",
         status: 0,
         ok: false,
         elapsedMs: Date.now() - started,

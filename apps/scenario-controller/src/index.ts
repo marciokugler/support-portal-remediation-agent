@@ -10,8 +10,8 @@ import {
 export const scenarios = {
   cacheDiskPressure: {
     id: "cache-disk-pressure",
-    name: "Support knowledge cache volume pressure",
-    affectedTransaction: "customer_support_response"
+    name: "Claims knowledge cache volume pressure",
+    affectedTransaction: "claim_status_response"
   }
 };
 

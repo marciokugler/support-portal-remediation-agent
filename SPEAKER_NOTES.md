@@ -34,7 +34,7 @@ What this session is:
 
 ## Core Customer Story
 
-A company launches an AI-powered support portal to improve customer experience and scale support. Customers expect fast, accurate, always-on digital service. During peak usage, a dependency or feature-flag change degrades response quality and latency. Splunk RUM, Digital Experience Analytics, and Session Replay expose the impact quickly and show what the customer actually experienced. Splunk Observability Cloud then provides the evidence needed to understand what is happening. A separate remediation orchestrator receives the detector alert, accepts a human-in-the-loop summary from Splunk AI Assistant or Troubleshooting Agent, enriches missing structured fields through targeted Splunk API lookups, and passes a bounded evidence package to the remediation agent. The team applies policy, approves the action, validates the outcome, and preserves the audit trail.
+A company launches an AI-powered claims portal to improve customer experience and scale claims operations. Customers expect fast, accurate, always-on digital service. During peak usage, a cache volume pressure degrades response quality and latency. Splunk RUM and Digital Experience Analytics can show browser impact, while APM and Infrastructure provide the reliable proof path. Splunk Observability Cloud then provides the evidence needed to understand what is happening. A separate remediation orchestrator receives the detector alert, accepts a human-in-the-loop summary from Splunk AI Assistant or Troubleshooting Agent, enriches missing structured fields through targeted Splunk API lookups, and passes a bounded evidence package to the remediation agent. The team applies policy, approves the action, validates the outcome, and preserves the audit trail.
 
 The core message for customers:
 
@@ -80,7 +80,7 @@ Key line to land:
 
 Marcio:
 
-"Let me start with a situation that is becoming very common. A company launches an AI-powered support portal. The business loves it because it reduces pressure on human agents, it improves self-service, and it gives customers faster answers at any hour."
+"Let me start with a situation that is becoming very common. A company launches an AI-powered claims portal. The business loves it because it reduces pressure on human agents, it improves self-service, and it gives customers faster answers at any hour."
 
 "Then one day, during a high-volume period, response times jump. Some answers come back slowly. Some fail entirely. Internally, the teams eventually see alerts, traces, and infrastructure metrics. But the customer does not see telemetry. The customer only sees a broken experience."
 
@@ -110,7 +110,7 @@ Leila:
 
 "That is still valuable. But when customer-facing AI services are involved, we have to start even earlier. We have to start with what the user experienced in the browser, in the session, and in the journey itself."
 
-"That is why Splunk RUM, Digital Experience Analytics, and Session Replay matter in this story. They let us start from customer truth, not just backend symptoms."
+"That is why Splunk RUM and Digital Experience Analytics matter in this story. They let us start from customer truth when browser data is available, and then APM plus Infrastructure give us the reliable proof path."
 
 "And when customer-facing AI services are involved, that last mile from insight to action matters more. The delay there can be where customer trust erodes."
 
@@ -168,13 +168,13 @@ Key line to land:
 
 Marcio:
 
-"Imagine a company that has rolled out an AI support portal. Customers use it to troubleshoot issues, ask product questions, and resolve common problems without opening a ticket."
+"Imagine a company that has rolled out an AI claims portal. Customers use it to troubleshoot issues, ask product questions, and resolve common problems without opening a ticket."
 
 "The experience is working well. Adoption is increasing. Leadership is happy because the portal improves satisfaction and lowers support cost."
 
-"And importantly, this is not a one-workflow app. It has multiple business transactions. Customers can ask for help, check case status, and search knowledge content. That matters because in production, not everything breaks at once."
+"And importantly, this is not a one-workflow app. It has multiple business transactions. Customers can ask for claim status, check policy coverage, and search claims FAQ content. That matters because in production, not everything breaks at once."
 
-"Now we introduce pressure in the dependency path. In this demo, the support knowledge cache volume fills up, which is the kind of operational issue students can inspect with out-of-the-box infrastructure and APM signals."
+"Now we introduce pressure in the dependency path. In this demo, the claims knowledge cache volume fills up, which is the kind of operational issue students can inspect with out-of-the-box infrastructure and APM signals."
 
 "The result is simple: customers start waiting longer, some requests fail, and confidence in the experience starts to drop."
 
@@ -182,7 +182,7 @@ Leila:
 
 "That scenario matters because it is realistic. This is how most customer-facing AI systems fail in the real world. Not with a dramatic crash, but with degraded latency, partial failure, and uncertainty about where the problem actually is."
 
-"So in the demo, we will start by showing that degraded customer experience through RUM, DEA, and Session Replay. Then we will connect it to the backend path through business transactions and service map. Then we will move into the remediation decision."
+"So in the demo, we will start by showing the degraded customer experience through the portal and RUM if it is available. Then we will use APM service behavior and host filesystem metrics as the reliable path to the root cause before moving into the remediation decision."
 
 "And because we have multiple transactions instrumented, we can show something very important: one workflow is unhealthy, while the others remain healthy. That is a much more realistic customer story."
 
@@ -216,11 +216,11 @@ Key line to land:
 
 Marcio:
 
-"We start in a healthy state. The support portal is responding normally. Customer interactions are flowing through the browser, the backend, the assistant service, and the dependency path behind it."
+"We start in a healthy state. The claims portal is responding normally. Customer interactions are flowing through the browser, the backend, the assistant service, and the dependency path behind it."
 
-"Now we trigger the scenario. A change in the dependency path introduces latency and errors."
+"Now we trigger the scenario. Cache volume pressure in the dependency path introduces latency and errors."
 
-"From the customer side, the experience degrades immediately. Responses take longer. Some requests fail. DEA shows frustration in the journey, and Session Replay lets us see what the user actually experienced. If this were production, this is the moment where trust starts to fall."
+"From the customer side, the experience degrades immediately. Responses take longer. Some requests fail. If RUM details are available, DEA shows friction in the journey; either way, APM and Infrastructure show the service and filesystem evidence. If this were production, this is the moment where trust starts to fall."
 
 "Now we move into Splunk Observability Cloud. We start from the browser experience, then move into the business transaction, the service behavior, and the service map. We can see the latency and error pattern. We can correlate the affected path and identify where the system is under stress."
 
@@ -232,7 +232,7 @@ Leila:
 
 "Then the remediation agent, which we are instrumenting as a Python agent so we can observe it clearly, evaluates a bounded set of actions. It is not allowed to do anything it wants. It has a small, visible toolset and a policy model."
 
-"It proposes an action. In our primary path, that action is to clean the support knowledge cache volume associated with the degraded path."
+"It proposes an action. In our primary path, that action is to clean the claims knowledge cache volume associated with the degraded path."
 
 "Now we ask the governance question: should this be recommend only, approval required, or auto-execute? In a customer-facing production scenario like this, the default answer is approval required."
 

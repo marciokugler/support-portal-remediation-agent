@@ -4,12 +4,12 @@ This repository contains the `IBOBS-2002` Cisco Live demo app and supporting Spl
 
 ## Workspaces
 
-- `apps/frontend`: customer-facing AI support portal
+- `apps/frontend`: customer-facing AI claims portal
 - `apps/operator-console`: presenter-facing evidence and approval console
 - `apps/api-gateway`: primary backend entrypoint
-- `apps/assistant-service`: support-response workflow
-- `apps/case-service`: case status workflow
-- `apps/knowledge-service`: knowledge search workflow and cache-pressure source
+- `apps/assistant-service`: claim status workflow
+- `apps/case-service`: policy coverage workflow
+- `apps/knowledge-service`: claims FAQ workflow and cache-pressure source
 - `apps/remediation-orchestrator`: evidence intake, enrichment, policy, and action management
 - `apps/scenario-controller`: deterministic incident trigger/reset
 - `apps/remediation-agent`: Python remediation agent with model-backed action selection
@@ -67,7 +67,7 @@ npm run dev
 
 Key local URLs:
 
-- support portal: `http://127.0.0.1:18080`
+- claims portal: `http://127.0.0.1:18080`
 - operator console: `http://127.0.0.1:18081`
 - API gateway: `http://127.0.0.1:18100`
 - assistant service: `http://127.0.0.1:18101`
@@ -87,9 +87,9 @@ The demo is now metric-driven and uses out-of-the-box Splunk Observability signa
 - Splunk OTel Collector hostmetrics show filesystem pressure.
 - The remediation agent can be instrumented for AI Agent Monitoring through Splunk/OpenTelemetry packages.
 
-The deterministic incident is `cache-disk-pressure`. The scenario controller asks `support-knowledge` to fill a bounded cache directory or tmpfs mount. That creates filesystem pressure visible through host metrics and slows the Customer Support Response path through normal APM spans. Case status lookup and knowledge article search remain available as healthy comparison journeys.
+The deterministic incident is `cache-disk-pressure`. The scenario controller asks `claims-knowledge` to fill a bounded cache directory or tmpfs mount. That creates filesystem pressure visible through host metrics and slows the AI Claim Status path through normal APM spans. Policy Coverage Lookup and Claims FAQ Search remain available as healthy comparison journeys.
 
-The bounded remediation action is `clean_service_cache`. Approval calls the remediation agent, which resets the scenario through the scenario controller and verifies recovery by running a post-remediation support request.
+The bounded remediation action is `clean_claims_knowledge_cache`. Approval calls the remediation agent, which resets the scenario through the scenario controller and verifies recovery by running a post-remediation claim status request.
 
 ## Student Isolation
 
@@ -110,7 +110,7 @@ The repo includes a development compose file at [infra/docker/docker-compose.yml
 docker compose --env-file .env -f infra/docker/docker-compose.yml up
 ```
 
-The compose path mounts a shared 128 MiB tmpfs at `/var/cache/support-knowledge` for the knowledge service and the collector. The cache-pressure scenario fills that tmpfs, which gives the collector a real filesystem signal without risking the host disk.
+The compose path mounts a shared 128 MiB tmpfs at `/var/cache/claims-knowledge` for the knowledge service and the collector. The cache-pressure scenario fills that tmpfs, which gives the collector a real filesystem signal without risking the host disk.
 
 ## Splunk Objects
 
@@ -123,9 +123,9 @@ npm run splunk:apply
 
 Terraform remains available in [infra/terraform](infra/terraform). Current detectors are based on out-of-the-box signals:
 
-- `IBOBS Support Knowledge Cache Filesystem Pressure`
-- `IBOBS Support Knowledge APM Latency`
-- `IBOBS Support Knowledge APM Error Rate`
+- `IBOBS Claims Knowledge Cache Filesystem Pressure`
+- `IBOBS Claims Knowledge APM Latency`
+- `IBOBS Claims Knowledge APM Error Rate`
 
 ## Primary Lab Flow
 

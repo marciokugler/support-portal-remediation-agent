@@ -53,7 +53,7 @@ If credentials are missing:
 
 Default local layout:
 
-- `18080` support portal
+- `18080` claims portal
 - `18081` operator console
 - `18082` docs, when served with the workshop command
 - `18100` API gateway
@@ -81,7 +81,7 @@ lsof -i :18080 -i :18081 -i :18082 -i :18100 -i :18101 -i :18102 -i :18103 -i :1
 
 Recommended windows:
 
-- support portal
+- claims portal
 - operator console
 - Splunk Observability Cloud
 - terminal running the app stack

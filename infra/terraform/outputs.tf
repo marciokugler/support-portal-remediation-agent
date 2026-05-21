@@ -37,20 +37,20 @@ output "dashboards" {
 
 output "detectors" {
   value = {
-    support_knowledge_filesystem_pressure = {
-      id   = signalfx_detector.support_knowledge_filesystem_pressure.id
-      name = signalfx_detector.support_knowledge_filesystem_pressure.name
-      url  = signalfx_detector.support_knowledge_filesystem_pressure.url
+    claims_knowledge_filesystem_pressure = {
+      id   = signalfx_detector.claims_knowledge_filesystem_pressure.id
+      name = signalfx_detector.claims_knowledge_filesystem_pressure.name
+      url  = signalfx_detector.claims_knowledge_filesystem_pressure.url
     }
-    support_knowledge_latency = {
-      id   = signalfx_detector.support_knowledge_latency.id
-      name = signalfx_detector.support_knowledge_latency.name
-      url  = signalfx_detector.support_knowledge_latency.url
+    claims_knowledge_latency = {
+      id   = signalfx_detector.claims_knowledge_latency.id
+      name = signalfx_detector.claims_knowledge_latency.name
+      url  = signalfx_detector.claims_knowledge_latency.url
     }
-    support_knowledge_error_rate = {
-      id   = signalfx_detector.support_knowledge_error_rate.id
-      name = signalfx_detector.support_knowledge_error_rate.name
-      url  = signalfx_detector.support_knowledge_error_rate.url
+    claims_knowledge_error_rate = {
+      id   = signalfx_detector.claims_knowledge_error_rate.id
+      name = signalfx_detector.claims_knowledge_error_rate.name
+      url  = signalfx_detector.claims_knowledge_error_rate.url
     }
   }
 }

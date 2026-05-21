@@ -30,20 +30,20 @@ Prove that traces, APM service metrics, RUM data, and host filesystem metrics le
 
 1. Open the portal at `http://127.0.0.1:18080`.
 2. Execute all three transactions:
-   - Customer Support Response
-   - Case Status Lookup
-   - Knowledge Article Search
+   - AI Claim Status
+   - Policy Coverage Lookup
+   - Claims FAQ Search
 3. Trigger `cache-disk-pressure`.
-4. Re-run Customer Support Response.
+4. Re-run AI Claim Status.
 5. Create an incident in the operator console and drive the remediation proposal flow.
 
 ## What to look for
 
 APM services:
 
-- `support-portal-api`
-- `support-assistant`
-- `support-knowledge`
+- `claims-portal-api`
+- `claims-assistant`
+- `claims-knowledge`
 - `remediation-orchestrator`
 - `remediation-agent`
 
@@ -55,7 +55,7 @@ Metrics:
 
 Browser:
 
-- RUM application for the support portal, if `VITE_SPLUNK_RUM_TOKEN` is set
+- RUM application for the claims portal, if `VITE_SPLUNK_RUM_TOKEN` is set
 - browser spans with `app.business_transaction`
 
 ## If signals do not appear

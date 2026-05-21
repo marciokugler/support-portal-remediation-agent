@@ -48,12 +48,12 @@ async function buildEvidenceBundle(
     detectorName:
       existingIncident?.detectorName ??
       matchingReceipt?.detectorName ??
-      "Support Knowledge Cache Volume Pressure",
+      "Claims Knowledge Cache Volume Pressure",
     severity: "critical",
     triggeredAt: new Date().toISOString(),
     incidentId: input.incidentId,
     dimensions: {
-      service: "support-knowledge",
+      service: "claims-knowledge",
       environment: "demo"
     }
   };
@@ -173,7 +173,7 @@ function normalizeDetectorWebhookPayload(input: unknown): DetectorWebhookPayload
     service:
       (typeof payload.service === "string" && payload.service) ||
       (typeof payload["service.name"] === "string" && (payload["service.name"] as string)) ||
-      "support-portal-api",
+      "claims-portal-api",
     environment:
       (typeof payload.environment === "string" && payload.environment) ||
       (typeof payload["deployment.environment"] === "string" && (payload["deployment.environment"] as string)) ||
@@ -446,7 +446,7 @@ export function buildServer() {
         actionId: `action-${Date.now()}`,
         incidentId: result.evidence.incidentId,
         type: result.evidence.candidateActions[0],
-        target: "support-knowledge-cache",
+        target: "claims-knowledge-cache",
         confidenceBand: result.evidence.investigation.confidenceBand,
         policyMode: result.policy.policyMode,
         reasoningSummary: "Policy limited this incident to recommendation-only handling.",
@@ -619,7 +619,7 @@ export function buildServer() {
 const demoInput: AssistantEvidenceInput = {
   source: "splunk_ai_assistant",
   rawText:
-    "High confidence that support-knowledge cache filesystem pressure degraded the Customer Support Response transaction. Disk utilization for the cache mount is above threshold and APM shows support-knowledge latency. Recommended action: clean_service_cache.",
+    "High confidence that claims-knowledge cache filesystem pressure degraded the AI Claim Status transaction. Disk utilization for the cache mount is above threshold and APM shows claims-knowledge latency. Recommended action: clean_claims_knowledge_cache.",
   pastedBy: "operator",
   pastedAt: new Date().toISOString()
 };

@@ -102,7 +102,7 @@ Use stable names with session context:
 - dashboard: `IBOBS Executive Story`
 - dashboard: `IBOBS Digital Experience`
 - dashboard: `IBOBS Business Transactions`
-- detector: `IBOBS Customer Support Response Latency`
+- detector: `IBOBS AI Claim Status Latency`
 
 ## Inputs
 

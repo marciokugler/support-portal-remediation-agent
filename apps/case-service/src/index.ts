@@ -11,7 +11,7 @@ import {
 } from "@ibobs/telemetry";
 
 export const caseService = {
-  name: "support-case-service",
+  name: "claims-policy-service",
   businessTransaction: BUSINESS_TRANSACTIONS.caseStatusLookup,
   telemetry: buildTelemetryAttributes(BUSINESS_TRANSACTIONS.caseStatusLookup)
 };
@@ -54,9 +54,11 @@ export function buildServer() {
       transaction: BUSINESS_TRANSACTIONS.caseStatusLookup,
       telemetry: caseService.telemetry,
       caseId,
-      caseStatus: "Awaiting customer response"
+      policyId: caseId,
+      coverageStatus: "Active coverage verified for the claim type",
+      nextStep: "Claims adjuster review remains on schedule"
     };
-    request.log.info({ caseId, payload }, "case lookup served");
+    request.log.info({ caseId, payload }, "policy coverage lookup served");
     return payload;
   });
 

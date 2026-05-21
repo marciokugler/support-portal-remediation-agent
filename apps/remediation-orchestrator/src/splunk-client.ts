@@ -70,7 +70,12 @@ export class SplunkObservabilityClient {
         this.arrayFrom(topology, ["affectedServices", "services", "apm.affectedServices"]) ??
         this.topologyNodeServices(topology);
       const containsDemoService =
-        topologyServices?.some((service) => service.startsWith("support-") || service === payload.dimensions?.service) ??
+        topologyServices?.some(
+          (service) =>
+            service.startsWith("claims-") ||
+            service.startsWith("support-") ||
+            service === payload.dimensions?.service
+        ) ??
         false;
       if (topologyServices && containsDemoService) {
         merged = {
@@ -113,8 +118,8 @@ export class SplunkObservabilityClient {
       warnings: this.accessToken
         ? ["Splunk enrichment did not return complete incident context."]
         : ["SPLUNK_ACCESS_TOKEN not configured; live Splunk enrichment is unavailable."],
-      affectedServices: payload.dimensions?.service ? [payload.dimensions.service] : ["support-knowledge"],
-      suspectService: payload.dimensions?.service ?? "support-knowledge",
+      affectedServices: payload.dimensions?.service ? [payload.dimensions.service] : ["claims-knowledge"],
+      suspectService: payload.dimensions?.service ?? "claims-knowledge",
       affectedTransactions: payload.dimensions?.transaction ? [payload.dimensions.transaction] : undefined
     };
   }
