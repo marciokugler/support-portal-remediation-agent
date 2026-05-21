@@ -16,12 +16,12 @@ STATE_PATH = Path(__file__).resolve().parent / ".object-ids.json"
 
 DEFAULT_CONTEXT = {
     "deployment_environment": os.getenv("DEPLOYMENT_ENVIRONMENT", "demo"),
+    "instance": os.getenv("INSTANCE", "student-001"),
     "orchestrator_webhook_url": os.getenv("ORCHESTRATOR_PUBLIC_WEBHOOK_URL", ""),
-    "customer_support_latency_threshold_ms": os.getenv("CUSTOMER_SUPPORT_LATENCY_THRESHOLD_MS", "1800"),
-    "customer_support_error_threshold": os.getenv("CUSTOMER_SUPPORT_ERROR_THRESHOLD", "0.1"),
-    "knowledge_search_error_threshold": os.getenv("KNOWLEDGE_SEARCH_ERROR_THRESHOLD", "2"),
-    "remediation_duration_threshold_ms": os.getenv("REMEDIATION_DURATION_THRESHOLD_MS", "120000"),
-    "max_affected_transactions": os.getenv("MAX_AFFECTED_TRANSACTIONS", "1"),
+    "filesystem_utilization_threshold": os.getenv("FILESYSTEM_UTILIZATION_THRESHOLD", "0.85"),
+    "cache_mountpoint": os.getenv("SPLUNK_CACHE_MOUNTPOINT", "/var/cache/support-knowledge"),
+    "apm_latency_threshold_ns": os.getenv("APM_LATENCY_THRESHOLD_NS", "1800000000"),
+    "apm_error_threshold": os.getenv("APM_ERROR_THRESHOLD", "0.05"),
 }
 
 

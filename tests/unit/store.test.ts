@@ -7,16 +7,15 @@ import {
   saveIncident,
   saveWebhookReceipt
 } from "../../packages/shared-types/src/store.ts";
-import { BLAST_RADIUS, BUSINESS_TRANSACTIONS } from "../../packages/shared-types/src/index.ts";
+import { BUSINESS_TRANSACTIONS } from "../../packages/shared-types/src/index.ts";
 
 test("incident store saves and retrieves incidents", () => {
   resetIncidents();
 
   saveIncident({
     incidentId: "incident-1",
-    scenarioId: "dependency-latency",
+    scenarioId: "cache-disk-pressure",
     businessTransaction: BUSINESS_TRANSACTIONS.customerSupportResponse,
-    blastRadius: BLAST_RADIUS.medium,
     status: "open"
   });
 

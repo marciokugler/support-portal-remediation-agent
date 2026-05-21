@@ -5,9 +5,7 @@ export const BUSINESS_TRANSACTIONS = {
 } as const;
 
 export const ACTION_TYPES = {
-  disableFeatureFlag: "disable_feature_flag",
-  rollbackCanary: "rollback_canary",
-  scaleWorkerPool: "scale_worker_pool",
+  cleanServiceCache: "clean_service_cache",
   restartService: "restart_service"
 } as const;
 
@@ -17,18 +15,11 @@ export const POLICY_MODES = {
   autoExecute: "auto_execute"
 } as const;
 
-export const BLAST_RADIUS = {
-  low: "low",
-  medium: "medium",
-  high: "high"
-} as const;
-
 export type BusinessTransaction =
   (typeof BUSINESS_TRANSACTIONS)[keyof typeof BUSINESS_TRANSACTIONS];
 
 export type ActionType = (typeof ACTION_TYPES)[keyof typeof ACTION_TYPES];
 export type PolicyMode = (typeof POLICY_MODES)[keyof typeof POLICY_MODES];
-export type BlastRadius = (typeof BLAST_RADIUS)[keyof typeof BLAST_RADIUS];
 
 export type BrowserExperienceSummary = {
   affectedSessions?: number;
@@ -57,7 +48,6 @@ export type InvestigationSummary = {
   likelyCause: string;
   recentChange?: string;
   confidenceBand: "low" | "medium" | "high";
-  blastRadius: BlastRadius;
 };
 
 export type AssistantEvidenceInput = {
@@ -128,7 +118,6 @@ export type IncidentRecord = {
   incidentId: string;
   scenarioId: string;
   businessTransaction: BusinessTransaction;
-  blastRadius: BlastRadius;
   detectorId?: string;
   detectorName?: string;
   status: "open" | "proposed" | "approved" | "executing" | "validated" | "closed";

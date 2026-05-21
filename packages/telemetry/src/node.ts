@@ -11,7 +11,7 @@ export function buildNodeTelemetryConfig(config: NodeTelemetryConfig) {
     serviceName: config.serviceName,
     serviceNamespace,
     deploymentEnvironment,
-    otlpEndpoint: config.endpoint ?? process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? "http://localhost:4318"
+    otlpEndpoint: config.endpoint ?? process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? "http://localhost:14318"
   };
 }
 

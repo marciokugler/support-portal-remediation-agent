@@ -15,17 +15,6 @@ export type SplunkEnrichmentResult = {
 };
 
 export class SplunkObservabilityClient {
-  private readonly impactMetricNames = [
-    "affected_sessions",
-    "frustration_signals",
-    "session_replay_candidates",
-    "incident_opened",
-    "remediation_actions_proposed",
-    "requests",
-    "errors",
-    "latency_latest_ms"
-  ];
-
   constructor(
     private readonly baseUrl: string,
     private readonly accessToken: string
@@ -69,19 +58,6 @@ export class SplunkObservabilityClient {
         errorRate: this.numberFrom(impact, ["errorRate", "error_rate", "apm.errorRate"]) ?? merged.errorRate,
         sessionReplayUrl: this.stringFrom(impact, ["sessionReplayUrl", "session_replay_url"]) ?? merged.sessionReplayUrl
       };
-    } else {
-      const metricImpact = await this.enrichImpactFromMetricSignals(payload, warnings);
-      if (metricImpact) {
-        sources.push("impact_metrics");
-        merged = {
-          ...merged,
-          affectedSessions: metricImpact.affectedSessions ?? merged.affectedSessions,
-          p95LatencyMs: metricImpact.p95LatencyMs ?? merged.p95LatencyMs,
-          errorRate: metricImpact.errorRate ?? merged.errorRate,
-          affectedTransactions: metricImpact.affectedTransactions ?? merged.affectedTransactions,
-          sessionReplayUrl: metricImpact.sessionReplayObserved ? merged.sessionReplayUrl : undefined
-        };
-      }
     }
 
     const topology = await this.fetchCandidateJson(
@@ -124,7 +100,8 @@ export class SplunkObservabilityClient {
   async explainEvidence(evidence: EvidenceBundle) {
     return {
       businessTransaction: evidence.browserExperience.affectedJourney,
-      blastRadius: evidence.investigation.blastRadius,
+      confidenceBand: evidence.investigation.confidenceBand,
+      suspectService: evidence.serviceImpact.suspectService,
       summary: evidence.investigation.likelyCause
     };
   }
@@ -136,7 +113,8 @@ export class SplunkObservabilityClient {
       warnings: this.accessToken
         ? ["Splunk enrichment did not return complete incident context."]
         : ["SPLUNK_ACCESS_TOKEN not configured; live Splunk enrichment is unavailable."],
-      affectedServices: payload.dimensions?.service ? [payload.dimensions.service] : [],
+      affectedServices: payload.dimensions?.service ? [payload.dimensions.service] : ["support-knowledge"],
+      suspectService: payload.dimensions?.service ?? "support-knowledge",
       affectedTransactions: payload.dimensions?.transaction ? [payload.dimensions.transaction] : undefined
     };
   }
@@ -174,224 +152,6 @@ export class SplunkObservabilityClient {
       );
       return null;
     }
-  }
-
-  private async enrichImpactFromMetricSignals(payload: DetectorWebhookPayload, warnings: string[]) {
-    const metricMatches = await Promise.all(
-      this.impactMetricNames.map(async (metricName) => {
-        const result = await this.fetchMetricTimeseries(metricName, warnings);
-        return {
-          metricName,
-          match: this.selectMetricSeries(result, payload)
-        };
-      })
-    );
-
-    const matched = metricMatches.filter((entry) => entry.match);
-    if (matched.length === 0) {
-      return null;
-    }
-
-    const affectedTransaction = matched
-      .map((entry) => entry.match?.dimensions?.["app.business_transaction"])
-      .find((value): value is string => typeof value === "string" && value.length > 0);
-
-    const transaction = affectedTransaction ?? "customer_support_response";
-    const affectedServices = Array.from(
-      new Set(
-        matched
-          .map((entry) => entry.match?.dimensions?.["service.name"] ?? entry.match?.dimensions?.service)
-          .filter((value): value is string => typeof value === "string" && value.length > 0)
-      )
-    );
-    const suspectService =
-      affectedServices.find((service) => service === "support-knowledge") ?? affectedServices.at(-1);
-    const affectedSessions = await this.queryLatestMetricValue(
-      "affected_sessions",
-      [
-        `sf_metric:"affected_sessions" AND app.business_transaction:"${transaction}"`,
-        payload.incidentId
-          ? `sf_metric:"affected_sessions" AND incident_id:"${payload.incidentId}"`
-          : undefined
-      ].filter((value): value is string => Boolean(value)),
-      warnings
-    );
-    const frustrationSignals = await this.queryLatestMetricValue(
-      "frustration_signals",
-      [`sf_metric:"frustration_signals" AND journey:"${transaction}"`],
-      warnings
-    );
-    const sessionReplayCandidates = await this.queryLatestMetricValue(
-      "session_replay_candidates",
-      [
-        payload.incidentId
-          ? `sf_metric:"session_replay_candidates" AND incident_id:"${payload.incidentId}"`
-          : undefined,
-        `sf_metric:"session_replay_candidates" AND app.business_transaction:"${transaction}"`
-      ].filter((value): value is string => Boolean(value)),
-      warnings
-    );
-    const requestCount = await this.queryLatestMetricValue(
-      "requests",
-      [`sf_metric:"requests" AND app.business_transaction:"${transaction}"`],
-      warnings
-    );
-    const errorCount = await this.queryLatestMetricValue(
-      "errors",
-      [`sf_metric:"errors" AND app.business_transaction:"${transaction}"`],
-      warnings,
-      false
-    );
-    const latestLatencyMs = await this.queryLatestMetricValue(
-      "latency_latest_ms",
-      [`sf_metric:"latency_latest_ms" AND app.business_transaction:"${transaction}"`],
-      warnings
-    );
-
-    if (affectedSessions === undefined && frustrationSignals === undefined && sessionReplayCandidates === undefined) {
-      warnings.push(
-        "Impact metric metadata exists in Splunk, but no recent datapoints matched the current incident filters."
-      );
-    }
-
-    return {
-      affectedSessions,
-      affectedServices,
-      suspectService,
-      affectedTransactions: affectedTransaction ? [affectedTransaction] : undefined,
-      frustrationSignals,
-      sessionReplayObserved: (sessionReplayCandidates ?? 0) > 0 || matched.some((entry) => entry.metricName === "session_replay_candidates"),
-      p95LatencyMs: latestLatencyMs,
-      errorRate:
-        requestCount && requestCount > 0
-          ? Number((((errorCount ?? 0) as number) / requestCount).toFixed(4))
-          : undefined
-    };
-  }
-
-  private async fetchMetricTimeseries(metricName: string, warnings: string[]) {
-    const url = `${this.baseUrl}/v2/metrictimeseries?query=${encodeURIComponent(`sf_metric:${metricName}`)}`;
-    try {
-      const response = await fetch(url, {
-        headers: {
-          "content-type": "application/json",
-          "x-sf-token": this.accessToken
-        }
-      });
-
-      if (!response.ok) {
-        warnings.push(`Splunk metric metadata ${metricName} returned ${response.status}.`);
-        return null;
-      }
-
-      return response.json();
-    } catch (error) {
-      warnings.push(
-        `Splunk metric metadata ${metricName} failed: ${error instanceof Error ? error.message : "unknown error"}.`
-      );
-      return null;
-    }
-  }
-
-  private async queryLatestMetricValue(
-    metricName: string,
-    queries: string[],
-    warnings: string[],
-    warnOnMiss = true
-  ) {
-    for (const query of queries) {
-      const value = await this.fetchLatestWindowValue(query, warnings);
-      if (value !== undefined) {
-        return value;
-      }
-    }
-
-    if (warnOnMiss) {
-      warnings.push(`No recent datapoints matched metric query for ${metricName}.`);
-    }
-    return undefined;
-  }
-
-  private async fetchLatestWindowValue(query: string, warnings: string[]) {
-    const endMs = Date.now();
-    const startMs = endMs - 60 * 60 * 1000;
-    const params = new URLSearchParams({
-      query,
-      startMs: String(startMs),
-      endMs: String(endMs),
-      resolution: "60000"
-    });
-    const url = `${this.baseUrl.replace(/\/v2$/, "").replace(/\/$/, "")}/v1/timeserieswindow?${params.toString()}`;
-
-    try {
-      const response = await fetch(url, {
-        headers: {
-          "content-type": "application/json",
-          "x-sf-token": this.accessToken
-        }
-      });
-
-      if (!response.ok) {
-        return undefined;
-      }
-
-      const payload = (await response.json()) as {
-        data?: Record<string, Array<[number, number]>>;
-        errors?: unknown[];
-      };
-      const series = payload.data ? Object.values(payload.data) : [];
-      const values = series
-        .flatMap((points) => points)
-        .map((point) => point?.[1])
-        .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
-
-      if (values.length === 0) {
-        return undefined;
-      }
-
-      return values[values.length - 1];
-    } catch (error) {
-      warnings.push(
-        `Splunk timeseries query failed for ${query}: ${error instanceof Error ? error.message : "unknown error"}.`
-      );
-      return undefined;
-    }
-  }
-
-  private selectMetricSeries(payload: unknown, detectorPayload: DetectorWebhookPayload) {
-    const results = this.valueAtPath(payload, "results");
-    if (!Array.isArray(results)) {
-      return undefined;
-    }
-
-    return results.find((result) => {
-      if (!result || typeof result !== "object") {
-        return false;
-      }
-
-      const item = result as {
-        metric?: string;
-        dimensions?: Record<string, string>;
-        customProperties?: Record<string, string>;
-      };
-
-      const dimensions = item.dimensions ?? {};
-      const properties = item.customProperties ?? {};
-      const incidentMatch =
-        detectorPayload.incidentId &&
-        (dimensions.incident_id === detectorPayload.incidentId || properties.incident_id === detectorPayload.incidentId);
-      const transactionMatch =
-        dimensions["app.business_transaction"] === "customer_support_response" ||
-        properties["app.business_transaction"] === "customer_support_response";
-
-      return Boolean(incidentMatch || transactionMatch);
-    }) as
-      | {
-          metric?: string;
-          dimensions?: Record<string, string>;
-          customProperties?: Record<string, string>;
-        }
-      | undefined;
   }
 
   private buildRequest(url: string) {

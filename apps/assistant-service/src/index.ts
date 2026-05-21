@@ -9,9 +9,6 @@ import {
   buildTelemetryAttributes,
   createServiceLogger,
   initSplunkNodeTelemetry,
-  recordError,
-  recordLatency,
-  recordRequest,
   runInSpan
 } from "@ibobs/telemetry";
 
@@ -63,7 +60,6 @@ export function buildServer() {
   app.post("/assistant/respond", async (request, reply) => {
     const prompt = (request.body as { prompt?: string }).prompt ?? "";
     request.log.info({ prompt }, "assistant request received");
-    const startedAt = performance.now();
     annotateCurrentSpan({
       ...assistantService.telemetry,
       "support.prompt_length": prompt.length
@@ -85,19 +81,7 @@ export function buildServer() {
     );
 
     const knowledgePayload = await knowledgeResponse.json();
-    recordLatency(performance.now() - startedAt, {
-      ...assistantService.telemetry,
-      service: assistantService.name
-    });
-    recordRequest({
-      ...assistantService.telemetry,
-      service: assistantService.name
-    });
     if (!knowledgeResponse.ok) {
-      recordError({
-        ...assistantService.telemetry,
-        service: assistantService.name
-      });
       reply.code(knowledgeResponse.status);
       request.log.warn({ prompt, dependency: knowledgePayload }, "assistant dependency returned an error");
       return {

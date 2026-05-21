@@ -1,31 +1,30 @@
 # Splunk Objects
 
-## Dashboards to Provision as Code
+## Dashboards to provision as code
 
 - Executive Story
-- Business Transactions
+- APM Service Requests
 - Digital Experience
 - Service Health
-- Remediation
-- AI Agent Monitoring companion dashboard
+- Remediation Operations
+- AI Agent Monitoring companion views, when enabled in the tenant
 
-## Detectors to Provision as Code
+## Detectors to provision as code
 
-- Customer Support Response Latency
-- Customer Support Response Error Rate
-- Knowledge Service Latency
-- Remediation Validation Failed
-- Remediation Duration Too Long
+- Support Knowledge Cache Filesystem Pressure
+- Support Knowledge APM Latency
+- Support Knowledge APM Error Rate
 
-## Manual or Tenant-Validation Candidates
+## Signal source
 
-- business transaction rules
-- endpoint grouping rules
-- operation grouping rules
-- session replay tenant configuration
+Use default Splunk Observability signals:
 
-## Provisioning Direction
+- `system.filesystem.utilization`
+- `service.request`
+- `service.request.duration.ns`
+- RUM and browser spans
+- AI/remediation spans
 
-Use Terraform first for dashboards, dashboard groups, and detectors.
-If a required object cannot be expressed cleanly with the provider, add a focused script or document the manual pre-flight step.
+## Provisioning direction
 
+Use `infra/splunk/specs` for iterative dashboard and detector authoring. Use Terraform when you need managed state and controlled rollout.

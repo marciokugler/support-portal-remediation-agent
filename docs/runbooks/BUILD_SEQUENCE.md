@@ -1,34 +1,34 @@
 # Build Sequence
 
-## Current Local Build Order
+## Current local build order
 
 1. Install workspace dependencies with `npm install`.
 2. Create the remediation-agent virtual environment and install it with `pip install -e .`.
-3. Optionally copy `.env.example` to `.env`.
-4. Start Docker so the local Splunk Collector can run.
-5. Start the collector with `npm run dev:collector`.
-6. Start the full stack with `npm run dev:all`.
-7. Open the frontend and operator console.
-8. Trigger a scenario from either UI.
-9. Reproduce the incident in the frontend.
-10. Use the operator console to create the incident, explain evidence, propose action, and approve it.
+3. Copy `.env.example` to `.env`.
+4. Set a unique `INSTANCE`.
+5. Start Docker so the local Splunk Collector can run.
+6. Start the collector with `npm run dev:collector`.
+7. Start the full stack with `npm run dev:all`.
+8. Open the portal and operator console.
+9. Trigger `cache-disk-pressure`.
+10. Reproduce the incident in the portal.
+11. Use the operator console to create the incident, explain evidence, propose action, approve, and validate.
 
-## Verification Order
+## Verification order
 
-1. Collector starts and accepts OTLP on `4318`.
-2. Frontend loads.
-3. API Gateway responds.
-4. Scenario controller toggles state.
-5. Collector logs show traces and custom metrics.
-6. Webhook creates incident.
-7. Evidence paste produces policy result.
-8. Agent evaluation produces bounded action.
+1. Collector accepts host OTLP traffic on `14318`.
+2. Portal loads on `18080`.
+3. Operator console loads on `18081`.
+4. API gateway responds on `18100`.
+5. Scenario controller toggles state on `18104`.
+6. Splunk receives APM service metrics and host filesystem metrics.
+7. Evidence paste produces a policy result.
+8. Agent evaluation produces `clean_service_cache`.
 9. Approval executes and validates.
 10. Terraform validates with `terraform -chdir=infra/terraform validate`.
 
-## Remaining Integration Work
+## Remaining integration work
 
-1. Wire tenant-specific Splunk API endpoints into the orchestrator.
-2. Validate the custom metrics and events in Splunk after collector-based export.
-3. Add richer frontend styling and demo-state views.
-4. Provision and test Splunk objects against the target tenant.
+1. Validate SignalFlow queries against the target Splunk tenant.
+2. Apply dashboards and detectors against live default signals.
+3. Rehearse the shared-account `INSTANCE` filtering path with multiple student values.

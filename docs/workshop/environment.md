@@ -1,20 +1,27 @@
 # Environment Setup
 
-This page explains how to prepare the runtime environment in detail.
+This page explains the runtime environment.
 
 ## 1. Create `.env`
-
-From the repo root:
 
 ```bash
 cp .env.example .env
 ```
 
-Then open `.env` and populate values you actually have.
+Then populate values you actually have.
 
-## 2. Minimum useful environment values
+## 2. Student identity
 
-For a realistic workshop, set:
+Each student should use a unique `INSTANCE`.
+
+```dotenv
+INSTANCE=student-001
+OTEL_RESOURCE_ATTRIBUTES=lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001,deployment.environment=demo
+```
+
+In a shared Splunk Observability Cloud account, this is what lets students filter to their own lab data.
+
+## 3. Minimum useful values
 
 ```dotenv
 SPLUNK_ACCESS_TOKEN=...
@@ -22,22 +29,60 @@ SPLUNK_REALM=...
 OPENAI_API_KEY=...
 ```
 
-## 3. Recommended telemetry values
+The stack can run without these values, but live Splunk export and model-backed remediation will be limited.
 
-For collector-based local export, confirm these values:
+## 4. Collector export
+
+For local collector export, use the high host port:
 
 ```dotenv
-OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
+OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318
 OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 ```
 
-If these are absent or wrong, your services may still run, but local collector export will not behave as intended.
+Inside Docker Compose, services use `http://splunk-otel-collector:4318`.
 
-## 4. Load `.env` into your shell before starting services
+## 5. App ports
 
-This matters because the same shell environment needs to carry values into the dev processes.
+Defaults:
 
-Run:
+```dotenv
+ORCHESTRATOR_PORT=18110
+API_GATEWAY_PORT=18100
+ASSISTANT_SERVICE_PORT=18101
+CASE_SERVICE_PORT=18102
+KNOWLEDGE_SERVICE_PORT=18103
+SCENARIO_CONTROLLER_PORT=18104
+REMEDIATION_AGENT_PORT=18800
+```
+
+Frontend URLs:
+
+```dotenv
+VITE_API_BASE_URL=http://127.0.0.1:18100
+VITE_ORCHESTRATOR_BASE_URL=http://127.0.0.1:18110
+VITE_SCENARIO_CONTROLLER_BASE_URL=http://127.0.0.1:18104
+```
+
+## 6. Cache pressure controls
+
+```dotenv
+SUPPORT_KNOWLEDGE_CACHE_DIR=/tmp/ciscolive26-${INSTANCE}/support-knowledge-cache
+SPLUNK_CACHE_MOUNTPOINT=/var/cache/support-knowledge
+SUPPORT_KNOWLEDGE_CACHE_FILL_PERCENT=92
+SUPPORT_KNOWLEDGE_CACHE_QUOTA_BYTES=134217728
+```
+
+For Docker Compose, the cache directory is mounted as a shared 128 MiB tmpfs volume at `/var/cache/support-knowledge` for both `support-knowledge` and the collector. The scenario fills a real bounded filesystem without touching the host disk, and Splunk filters the detector to `SPLUNK_CACHE_MOUNTPOINT`.
+
+## 7. Optional values
+
+- `VITE_SPLUNK_RUM_TOKEN`
+- `VITE_SPLUNK_SESSION_REPLAY_ENABLED=true`
+- `ORCHESTRATOR_PUBLIC_WEBHOOK_URL`
+- `SPLUNK_WEBHOOK_SHARED_SECRET`
+
+## 8. Load `.env`
 
 ```bash
 set -a
@@ -45,68 +90,12 @@ source .env
 set +a
 ```
 
-Expected result:
+Do this before starting collector, backend, or frontend processes.
 
-- shell exports the values in `.env`
-- later `npm run dev:*` commands inherit those values
+## 9. Optional public webhook
 
-## 5. Verify critical values are loaded
-
-Run:
-
-```bash
-echo "$SPLUNK_REALM"
-echo "$OTEL_EXPORTER_OTLP_ENDPOINT"
-```
-
-If you are using OpenAI:
-
-```bash
-test -n "$OPENAI_API_KEY" && echo "OPENAI_API_KEY is set"
-```
-
-## 6. Optional values for richer workshop behavior
-
-Depending on your tenant and demo target:
-
-- `VITE_SPLUNK_RUM_TOKEN`
-- `VITE_SPLUNK_SESSION_REPLAY_ENABLED=true`
-- `SPLUNK_HEC_URL`
-- `SPLUNK_HEC_TOKEN`
-- `SPLUNK_HEC_INDEX`
-- `ORCHESTRATOR_PUBLIC_WEBHOOK_URL`
-- `SPLUNK_WEBHOOK_SHARED_SECRET`
-
-## 7. Environment assumptions used by the repo
-
-The repo includes fallback behavior for local base URLs when explicit `*_BASE_URL` variables are absent. That means you normally do not need to define every service URL manually when using default ports.
-
-Still, avoid changing ports just before the workshop unless you have to. Every extra deviation increases risk.
-
-## 8. Safe validation
-
-Before starting the stack, validate the file is present and readable:
-
-```bash
-ls -l .env
-```
-
-If you want a non-sensitive sanity check:
-
-```bash
-grep -E '^(SPLUNK_REALM|OTEL_EXPORTER_OTLP_ENDPOINT|OTEL_EXPORTER_OTLP_PROTOCOL)=' .env
-```
-
-Do not print secrets to a shared screen during rehearsal or the live session.
-
-## 9. Optional: if you need a public detector webhook
-
-The primary lab flow uses copied Splunk evidence and does not require a public webhook. Start the tunnel only if you explicitly want to test live detector-to-orchestrator delivery after the orchestrator itself is working locally.
-
-Use:
+The primary lab flow uses copied Splunk evidence and does not require a public webhook. Start a tunnel only if you explicitly want Splunk detector delivery into the local orchestrator:
 
 ```bash
 npm run dev:tunnel
 ```
-
-Do not make tunnel setup your first validation step. First prove the local app, copy/paste evidence path, and local orchestrator work on localhost.

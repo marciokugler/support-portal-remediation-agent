@@ -9,13 +9,13 @@ The system is split into two layers:
 1. observability and evidence
 2. action and governance
 
-That distinction matters. It keeps the story technically credible and keeps the trust model clear.
+The separation keeps Splunk investigation, policy, model reasoning, approval, and execution easy to explain.
 
 ## User-facing layer
 
 ### `apps/frontend`
 
-This is the customer-facing AI support portal.
+Customer-facing AI support portal.
 
 It demonstrates:
 
@@ -23,16 +23,16 @@ It demonstrates:
 - case status lookup
 - knowledge article search
 
-It is the place where the incident becomes visible first.
+This is where the incident becomes visible first.
 
 ### `apps/operator-console`
 
-This is the presenter-facing operations and approval interface.
+Presenter-facing operations and approval interface.
 
-It is the place where you show:
+It shows:
 
 - incident intake
-- evidence context
+- Splunk evidence handoff
 - policy mode
 - proposed action
 - approval state
@@ -42,40 +42,36 @@ It is the place where you show:
 
 ### `apps/api-gateway`
 
-Primary backend entry point for the frontend.
+Primary backend entrypoint for the portal.
 
 ### `apps/assistant-service`
 
 Implements the support response workflow.
 
-This is part of the main degraded path in the workshop.
-
 ### `apps/case-service`
 
-Implements case status lookup.
-
-This should remain healthy during the demo incident.
+Implements case status lookup. This remains a healthy comparison journey.
 
 ### `apps/knowledge-service`
 
-Implements knowledge search and is an important failure source in the scenario.
+Implements knowledge search and owns the bounded cache directory used by the incident scenario.
+
+When `cache-disk-pressure` is active, it fills the cache directory and slows the support response path.
 
 ### `apps/scenario-controller`
 
 Provides deterministic incident trigger and reset behavior.
 
-This makes the workshop repeatable.
-
 ## Remediation layer
 
 ### `apps/remediation-orchestrator`
 
-This is the governance layer.
+Governance layer.
 
 Responsibilities:
 
-- receive detector context
-- accept human-readable investigation summaries
+- receive detector or local demo incident context
+- accept investigation summaries
 - parse evidence
 - enrich missing structured fields
 - build the final evidence bundle
@@ -86,54 +82,43 @@ Responsibilities:
 
 Python remediation agent with a bounded toolset and model-backed action selection.
 
-This is intentionally separated from Splunk investigation capabilities.
+The primary action is `clean_service_cache`.
 
-## Shared packages
+## Observability layer
 
-### `packages/shared-types`
+The workshop path is driven by default signals:
 
-Contracts for evidence, policy, actions, and store data.
+- Splunk RUM and browser spans for the portal
+- Splunk APM service metrics for latency, count, and errors
+- Splunk OTel Collector hostmetrics for filesystem utilization
+- AI/remediation spans for agent visibility
 
-### `packages/policy-engine`
+The incident does not require custom app metrics or log analysis.
 
-Deterministic policy logic outside the LLM.
+## Infrastructure
 
-### `packages/evidence-parser`
+### `infra/docker`
 
-Parses human-readable AI summary text into structured evidence.
+Docker Compose development stack. The knowledge service gets a bounded tmpfs cache volume in this path.
 
-### `packages/telemetry`
+### `infra/otel-collector`
 
-Shared telemetry naming and helper logic.
-
-### `packages/runtime-config`
-
-Runtime configuration helpers for browser and service apps.
-
-## Infrastructure and Splunk objects
-
-### `infra/terraform`
-
-Splunk dashboards, detectors, webhooks, and related objects as code.
+Local collector configuration for OTLP, hostmetrics, traces, and infrastructure metrics.
 
 ### `infra/splunk`
 
 Spec-driven authoring path for dashboards and detectors.
 
-### `infra/otel-collector`
+### `infra/terraform`
 
-Local collector configuration for OTLP and log forwarding.
+Terraform-managed Splunk dashboards, detectors, webhooks, and related objects.
 
 ## Architecture story to tell live
 
-The cleanest narrative is:
-
 1. customer experience degrades
-2. observability correlates the impact
+2. Splunk correlates browser, APM, and filesystem evidence
 3. the orchestrator turns investigation output into structured evidence
 4. deterministic policy decides what is allowed
-5. the remediation agent proposes a bounded action
+5. the remediation agent proposes `clean_service_cache`
 6. the operator approves
 7. the system validates recovery
-
-That is the workshop in one sequence.

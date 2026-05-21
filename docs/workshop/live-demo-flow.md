@@ -2,17 +2,15 @@
 
 This is the presenter script in operational form.
 
-Use it during rehearsal and right before going on stage.
-
 ## Demo objective
 
-Show a clear path from customer impact to governed remediation.
+Show a clear path from customer impact to governed remediation using default Splunk Observability signals.
 
 The audience should leave understanding five points:
 
 1. customer experience is the first signal
-2. only one business transaction is degraded
-3. observability provides the evidence package
+2. APM shows which service is slow
+3. host filesystem metrics explain the infrastructure condition
 4. the remediation path is bounded and governed
 5. recovery is validated and auditable
 
@@ -22,18 +20,18 @@ The audience should leave understanding five points:
 
 Say:
 
-> We start in a healthy state with three business transactions. Only one will degrade during the incident.
+> We start in a healthy state with three customer journeys. Only one will degrade during the incident.
 
 Show:
 
-- the frontend in healthy state
+- the support portal
 - one successful run of each transaction
 
-### 2. Frame the problem
+### 2. Explain the application side
 
 Say:
 
-> This is an AI-powered support portal. When it slows down, the customer sees the problem before the operators agree on the cause.
+> This portal is what a customer or support representative would use to get an AI-generated support answer, check a case, or search a knowledge base. A portal like this matters because customers do not see microservices. They see whether the support experience works.
 
 Show:
 
@@ -43,15 +41,15 @@ Show:
 
 ### 3. Trigger the fault
 
-Activate the latency scenario from the scenario controls.
+Click `Trigger Cache Pressure`.
 
 Then run `Customer Support Response` again.
 
 Narrate:
 
-> We are introducing a deterministic dependency or feature-flag-related degradation that affects the support response path.
+> We are filling a bounded cache volume used by the support knowledge service. This creates real filesystem pressure in the lab environment and slows the support response path.
 
-### 4. Show the contained blast radius
+### 4. Show healthy comparison journeys
 
 Re-run:
 
@@ -60,107 +58,98 @@ Re-run:
 
 Narrate:
 
-> The whole application is not broken. One workflow is unhealthy. Two are still healthy. That is what makes the incident realistic.
+> The whole application is not down. We have one degraded journey and two healthy comparison journeys. That helps operators avoid broad, risky remediation.
 
-### 5. Move to the operator console
+### 5. Move to Splunk Observability
 
-Show the incident handling interface.
+Keep this simple for students:
+
+- In RUM or Digital Experience, click the support portal application and look at the customer journey.
+- In APM, click the service map or service list and find `support-knowledge`.
+- In Infrastructure Monitoring, filter to the student `INSTANCE` and inspect filesystem utilization.
 
 Narrate:
 
-> Now we move from symptoms to evidence. We copy the investigation summary from Splunk, paste it into the operator console, and the orchestrator builds a structured evidence bundle.
+> We are not relying on logs or custom demo metrics. We are using the default signals students should expect in a real environment: browser experience, APM service health, and host filesystem metrics from the collector.
 
-### 6. Paste the investigation summary
+### 6. Ask Splunk AI Assistant for evidence
 
-Use the human-in-the-loop copy/paste step as the primary lab flow:
-
-1. copy the AI Assistant or Troubleshooting Agent summary from Splunk
-2. paste it into `Paste Splunk AI Assistant Summary`
-3. click `Open Incident From Evidence`
-
-If Splunk AI Assistant is not available during rehearsal, use this fallback text:
+Use this prompt:
 
 ```text
-High confidence that support_knowledge_v2 degraded the Customer Support Response transaction.
-Affected transaction: Customer Support Response.
-Blast radius is medium because only one business transaction is materially affected.
-Recent change: support_knowledge_v2 canary / feature flag.
-Recommended action: disable_feature_flag.
+Investigate the Customer Support Response transaction in the demo environment over the last 15 minutes.
+
+Summarize the issue for an operations leader. Include:
+- whether Customer Support Response is degraded
+- the likely affected service
+- the filesystem or disk signal visible for this student instance
+- the APM evidence that supports the finding
+- confidence level
+- one narrow recommended remediation action
+
+Keep the response concise enough to paste into the remediation console.
 ```
 
-Narrate:
+Fallback evidence if AI Assistant is unavailable:
 
-> We keep a visible human trust checkpoint. Splunk provides the evidence, the operator carries it into the governed workflow, and the LLM is not directly taking arbitrary action in production.
+```text
+High confidence that support-knowledge cache filesystem pressure degraded the Customer Support Response transaction.
+Host filesystem utilization for the student instance is above threshold, and APM shows elevated support-knowledge request duration.
+Case Status Lookup and Knowledge Article Search remain healthy comparison journeys.
+Recommended action: clean_service_cache.
+```
 
-### 7. Explain evidence enrichment
+### 7. Paste the evidence
 
-Show or describe:
+In the operator console:
 
-- parsed narrative evidence
-- enrichment from Splunk APIs or fallback data
-- blast radius interpretation
-- policy mode
+1. paste the summary into `Paste Splunk AI Assistant Summary`
+2. click `Open Incident From Evidence`
+3. review the evidence handoff and policy panels
 
 Narrate:
 
 > The orchestrator is the governance layer. It converts investigation context into structured evidence before the remediation agent is asked to act.
 
-### 8. Show the proposed action
+### 8. Explain the proposed action
 
-Expected demo direction:
+Expected direction:
 
-- bounded action such as `disable_feature_flag`
-- approval required policy mode
+- confidence is high
+- policy mode is approval required
+- action is `clean_service_cache`
 
 Narrate:
 
-> This is not autonomous everything. It is bounded automation with explicit scope and approval.
+> This is not arbitrary automation. The agent has a bounded toolset, the policy check gates execution, and the operator approves before action.
 
 ### 9. Approve and execute
 
-Approve the action in the operator console.
+Click the approval button when it is enabled.
 
 Narrate:
 
-> The action executes only after policy and approval allow it.
+> Approval calls the remediation agent. In this lab, the action clears the support-knowledge cache pressure through the scenario controller.
 
 ### 10. Validate recovery
 
-Re-run the degraded transaction and show it has recovered.
+Re-run `Customer Support Response`.
+
+Show:
+
+- the portal response recovers
+- the operator console validation panel updates
+- Splunk APM and filesystem signals begin moving back toward normal
 
 Narrate:
 
-> The workshop ends on validation, not on recommendation. If you cannot verify recovery, the remediation story is incomplete.
-
-### 11. Close on auditability
-
-Call out:
-
-- recommendation
-- approval state
-- execution result
-- recovery timestamps
-
-Narrate:
-
-> The real value is not only that the system found a next step. It is that the step was explainable, bounded, approved, executed, and verified.
+> The workshop ends on validation, not recommendation. If you cannot verify recovery, the remediation story is incomplete.
 
 ## Presenter pitfalls to avoid
 
-- do not start with backend internals before showing user impact
-- do not imply Splunk directly invokes an arbitrary external agent
-- do not describe the flow as fully autonomous
-- do not let the two healthy transactions disappear from the story
-- do not skip the recovery validation step
-
-## If the live demo misbehaves
-
-Fall back to this structure:
-
-1. show baseline
-2. explain the intended degraded path
-3. show the operator console state you do have
-4. explain the bounded action and guardrails
-5. close on architecture and trust
-
-That preserves the message even if a live signal is incomplete.
+- do not start with backend internals before showing customer impact
+- do not imply Splunk directly invokes arbitrary external actions
+- do not call the flow fully autonomous
+- do not rely on logs for the main story
+- do not mention custom demo metrics as the detector source
+- do not skip recovery validation

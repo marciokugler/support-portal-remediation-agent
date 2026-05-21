@@ -6,7 +6,6 @@ import { parseAssistantEvidence } from "@ibobs/evidence-parser";
 import { evaluatePolicy } from "@ibobs/policy-engine";
 import {
   ACTION_TYPES,
-  BLAST_RADIUS,
   BUSINESS_TRANSACTIONS,
   POLICY_MODES,
   getIncident,
@@ -26,16 +25,6 @@ import {
   buildNodeTelemetryConfig,
   createServiceLogger,
   initSplunkNodeTelemetry,
-  recordActionProposed,
-  recordAffectedSessions,
-  recordAffectedTransactionsCount,
-  recordFrustrationSignals,
-  recordIncidentOpened,
-  recordPolicyDecision,
-  recordRemediationDuration,
-  recordSessionReplayCandidate,
-  recordSuspectDependency,
-  recordValidationFailed,
   runInSpan
 } from "@ibobs/telemetry";
 import { RemediationAgentClient } from "./agent-client";
@@ -59,12 +48,12 @@ async function buildEvidenceBundle(
     detectorName:
       existingIncident?.detectorName ??
       matchingReceipt?.detectorName ??
-      "Customer Support Response Latency",
+      "Support Knowledge Cache Volume Pressure",
     severity: "critical",
     triggeredAt: new Date().toISOString(),
     incidentId: input.incidentId,
     dimensions: {
-      service: "support-portal-api",
+      service: "support-knowledge",
       environment: "demo"
     }
   };
@@ -72,7 +61,7 @@ async function buildEvidenceBundle(
 
   return {
     incidentId: input.incidentId ?? "incident-demo-001",
-    scenarioId: "dependency-latency",
+    scenarioId: "cache-disk-pressure",
     detector: {
       detectorId: detectorPayload.detectorId,
       detectorName: detectorPayload.detectorName,
@@ -98,8 +87,7 @@ async function buildEvidenceBundle(
     investigation: {
       likelyCause: parsed.likelyCause,
       recentChange: enrichment.recentChange,
-      confidenceBand: parsed.confidenceBand,
-      blastRadius: parsed.blastRadius ?? BLAST_RADIUS.medium
+      confidenceBand: parsed.confidenceBand
     },
     candidateActions: parsed.candidateActions as (typeof ACTION_TYPES)[keyof typeof ACTION_TYPES][],
     sourceNotes: {
@@ -141,9 +129,8 @@ function buildIncidentFromWebhook(payload: DetectorWebhookPayload) {
 
   return saveIncident({
     incidentId,
-    scenarioId: "dependency-latency",
+    scenarioId: "cache-disk-pressure",
     businessTransaction: BUSINESS_TRANSACTIONS.customerSupportResponse,
-    blastRadius: BLAST_RADIUS.medium,
     detectorId: payload.detectorId,
     detectorName: payload.detectorName,
     status: "open"
@@ -291,27 +278,6 @@ export function buildServer() {
       },
       () => splunkClient.enrichDetector(payload)
     );
-    const metricAttrs = {
-      "deployment.environment": "demo",
-      "app.business_transaction": incident.businessTransaction,
-      incident_id: incident.incidentId
-    };
-    recordIncidentOpened(incident.blastRadius, metricAttrs);
-    if (enrichment.affectedSessions !== undefined) {
-      recordAffectedSessions(enrichment.affectedSessions, metricAttrs);
-    }
-    recordAffectedTransactionsCount(enrichment.affectedTransactions?.length ?? 1, metricAttrs);
-    if (enrichment.suspectService) {
-      recordSuspectDependency(enrichment.suspectService, metricAttrs);
-    }
-    recordFrustrationSignals(2, {
-      "deployment.environment": "demo",
-      journey: incident.businessTransaction
-    });
-    if (enrichment.sessionReplayUrl) {
-      recordSessionReplayCandidate(metricAttrs);
-    }
-
     return {
       incident,
       enrichment
@@ -401,7 +367,6 @@ export function buildServer() {
       incidentId: result.evidence.incidentId,
       scenarioId: result.evidence.scenarioId,
       businessTransaction: result.evidence.browserExperience.affectedJourney,
-      blastRadius: result.evidence.investigation.blastRadius,
       detectorId: existingIncident?.detectorId,
       detectorName: existingIncident?.detectorName,
       status: "proposed",
@@ -430,14 +395,8 @@ export function buildServer() {
       const evidence = existingIncident.evidence;
       const policy = evaluatePolicy(evidence);
       annotateCurrentSpan({
-        "app.blast_radius": evidence.investigation.blastRadius,
         "app.policy_mode": policy.policyMode,
         "app.enrichment_applied": evidence.sourceNotes.enrichmentApplied
-      });
-      recordPolicyDecision(policy.policyMode, {
-        "deployment.environment": "demo",
-        "app.business_transaction": evidence.browserExperience.affectedJourney,
-        incident_id: evidence.incidentId
       });
 
       const proposedAction = await runInSpan(
@@ -449,17 +408,11 @@ export function buildServer() {
         },
         () => agentClient.evaluate(evidence, policy.policyMode)
       );
-      recordActionProposed(proposedAction.type, {
-        "deployment.environment": "demo",
-        "app.business_transaction": evidence.browserExperience.affectedJourney,
-        incident_id: evidence.incidentId
-      });
 
       saveIncident({
         incidentId: evidence.incidentId,
         scenarioId: evidence.scenarioId,
         businessTransaction: evidence.browserExperience.affectedJourney,
-        blastRadius: evidence.investigation.blastRadius,
         detectorId: existingIncident.detectorId,
         detectorName: existingIncident.detectorName,
         status: "proposed",
@@ -483,14 +436,8 @@ export function buildServer() {
       () => intakeAssistantEvidence(payload, splunkClient)
     );
     annotateCurrentSpan({
-      "app.blast_radius": result.evidence.investigation.blastRadius,
       "app.policy_mode": result.policy.policyMode,
       "app.enrichment_applied": result.evidence.sourceNotes.enrichmentApplied
-    });
-    recordPolicyDecision(result.policy.policyMode, {
-      "deployment.environment": "demo",
-      "app.business_transaction": result.evidence.browserExperience.affectedJourney,
-      incident_id: result.evidence.incidentId
     });
 
     if (!result.policy.eligible && result.policy.policyMode === POLICY_MODES.recommendOnly) {
@@ -499,11 +446,11 @@ export function buildServer() {
         actionId: `action-${Date.now()}`,
         incidentId: result.evidence.incidentId,
         type: result.evidence.candidateActions[0],
-        target: "support_knowledge_v2",
+        target: "support-knowledge-cache",
         confidenceBand: result.evidence.investigation.confidenceBand,
         policyMode: result.policy.policyMode,
         reasoningSummary: "Policy limited this incident to recommendation-only handling.",
-        validationPlan: ["Escalate to operator review", "Confirm affected transaction remains isolated"],
+        validationPlan: ["Escalate to operator review", "Confirm filesystem pressure drops before execution"],
         status: "proposed"
       };
 
@@ -511,7 +458,6 @@ export function buildServer() {
         incidentId: result.evidence.incidentId,
         scenarioId: result.evidence.scenarioId,
         businessTransaction: result.evidence.browserExperience.affectedJourney,
-        blastRadius: result.evidence.investigation.blastRadius,
         detectorId: existingIncident?.detectorId,
         detectorName: existingIncident?.detectorName,
         status: "proposed",
@@ -535,17 +481,11 @@ export function buildServer() {
       },
       () => agentClient.evaluate(result.evidence, result.policy.policyMode)
     );
-    recordActionProposed(proposedAction.type, {
-      "deployment.environment": "demo",
-      "app.business_transaction": result.evidence.browserExperience.affectedJourney,
-      incident_id: result.evidence.incidentId
-    });
 
     saveIncident({
       incidentId: result.evidence.incidentId,
       scenarioId: result.evidence.scenarioId,
       businessTransaction: result.evidence.browserExperience.affectedJourney,
-      blastRadius: result.evidence.investigation.blastRadius,
       detectorId: existingIncident?.detectorId,
       detectorName: existingIncident?.detectorName,
       status: "proposed",
@@ -594,7 +534,6 @@ export function buildServer() {
       approvedAt
     });
 
-    const startedAt = performance.now();
     saveIncident({
       ...incident,
       status: "executing",
@@ -630,19 +569,6 @@ export function buildServer() {
             notes: ["Verification skipped because execution failed."]
           };
     const verifiedAt = new Date().toISOString();
-    const durationMs = performance.now() - startedAt;
-    recordRemediationDuration(durationMs, {
-      "deployment.environment": "demo",
-      "app.business_transaction": incident.businessTransaction,
-      "action.type": approvedAction.type
-    });
-    if (verifyResult.status !== "validated") {
-      recordValidationFailed({
-        "deployment.environment": "demo",
-        "app.business_transaction": incident.businessTransaction,
-        "action.type": approvedAction.type
-      });
-    }
 
     const updatedAction: ProposedAction = {
       ...approvedAction,
@@ -693,7 +619,7 @@ export function buildServer() {
 const demoInput: AssistantEvidenceInput = {
   source: "splunk_ai_assistant",
   rawText:
-    "High confidence that the recent support_knowledge_v2 feature flag change degraded the customer support response workflow. Recommended action: disable the feature flag.",
+    "High confidence that support-knowledge cache filesystem pressure degraded the Customer Support Response transaction. Disk utilization for the cache mount is above threshold and APM shows support-knowledge latency. Recommended action: clean_service_cache.",
   pastedBy: "operator",
   pastedAt: new Date().toISOString()
 };

@@ -5,34 +5,34 @@
     "timeRange": "-30m",
     "charts": [
       {
-        "name": "Customer Support Response Latency",
+        "name": "Support Portal Request Duration",
         "type": "time",
-        "programText": "A = data('latency_latest_ms', filter=filter('app.business_transaction', 'customer_support_response')).mean().publish(label='Latency')",
+        "programText": "A = data('service.request.duration.ns', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('service.instance.id', '{{instance}}')).percentile(pct=95, by=['sf_service']).publish(label='P95 Duration')",
         "grid": { "width": 6, "height": 1, "row": 0, "column": 0 }
       },
       {
-        "name": "Affected Sessions",
+        "name": "Support Knowledge Cache Filesystem Utilization",
         "type": "single_value",
-        "programText": "A = data('affected_sessions', filter=filter('deployment.environment', '{{deployment_environment}}')).publish(label='Sessions')",
+        "programText": "A = data('system.filesystem.utilization', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('service.instance.id', '{{instance}}') and filter('mountpoint', '{{cache_mountpoint}}')).max().publish(label='Cache Filesystem Utilization')",
         "grid": { "width": 6, "height": 1, "row": 0, "column": 6 }
       }
     ]
   },
   {
     "key": "business_transactions",
-    "name": "IBOBS Business Transactions",
+    "name": "IBOBS APM Service Requests",
     "timeRange": "-30m",
     "charts": [
       {
-        "name": "Latency by Business Transaction",
+        "name": "Request Duration by Service",
         "type": "time",
-        "programText": "A = data('latency_latest_ms', filter=filter('deployment.environment', '{{deployment_environment}}')).mean(by=['app.business_transaction']).publish(label='Latency')",
+        "programText": "A = data('service.request.duration.ns', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('service.instance.id', '{{instance}}')).percentile(pct=95, by=['sf_service']).publish(label='P95 Duration')",
         "grid": { "width": 12, "height": 1, "row": 0, "column": 0 }
       },
       {
-        "name": "Error Rate by Business Transaction",
+        "name": "Request Count by Service",
         "type": "time",
-        "programText": "A = data('errors', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['app.business_transaction'])\nB = data('requests', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['app.business_transaction'])\nC = (A / B).publish(label='Error Rate')",
+        "programText": "A = data('service.request', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('service.instance.id', '{{instance}}')).count(by=['sf_service']).publish(label='Requests')",
         "grid": { "width": 12, "height": 1, "row": 1, "column": 0 }
       }
     ]
@@ -43,28 +43,16 @@
     "timeRange": "-30m",
     "charts": [
       {
-        "name": "Affected Sessions",
-        "type": "single_value",
-        "programText": "A = data('affected_sessions', filter=filter('deployment.environment', '{{deployment_environment}}')).sum().publish(label='Affected Sessions')",
-        "grid": { "width": 3, "height": 1, "row": 0, "column": 0 }
+        "name": "RUM Page Loads",
+        "type": "time",
+        "programText": "A = data('rum.page_view', filter=filter('deployment.environment', '{{deployment_environment}}')).count().publish(label='Page Views')",
+        "grid": { "width": 6, "height": 1, "row": 0, "column": 0 }
       },
       {
-        "name": "Journey Latency by Business Transaction",
+        "name": "Frontend Transaction Spans",
         "type": "time",
-        "programText": "A = data('latency_latest_ms', filter=filter('deployment.environment', '{{deployment_environment}}')).mean(by=['app.business_transaction']).publish(label='Latency')",
-        "grid": { "width": 9, "height": 1, "row": 0, "column": 3 }
-      },
-      {
-        "name": "DEA Frustration Signals",
-        "type": "time",
-        "programText": "A = data('frustration_signals', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['journey']).publish(label='Signals')",
-        "grid": { "width": 6, "height": 1, "row": 1, "column": 0 }
-      },
-      {
-        "name": "Session Replay Candidates",
-        "type": "time",
-        "programText": "A = data('session_replay_candidates', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['app.business_transaction']).publish(label='Replay Candidates')",
-        "grid": { "width": 6, "height": 1, "row": 1, "column": 6 }
+        "programText": "A = data('service.request', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('sf_service', 'ibobs-support-portal')).count(by=['app.business_transaction']).publish(label='Transactions')",
+        "grid": { "width": 6, "height": 1, "row": 0, "column": 6 }
       }
     ]
   },
@@ -74,21 +62,21 @@
     "timeRange": "-30m",
     "charts": [
       {
-        "name": "Latency by Service",
+        "name": "APM Duration by Service",
         "type": "time",
-        "programText": "A = data('latency_latest_ms', filter=filter('deployment.environment', '{{deployment_environment}}')).mean(by=['service']).publish(label='Latency')",
+        "programText": "A = data('service.request.duration.ns', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('service.instance.id', '{{instance}}')).percentile(pct=95, by=['sf_service']).publish(label='P95 Duration')",
         "grid": { "width": 6, "height": 1, "row": 0, "column": 0 }
       },
       {
-        "name": "Errors by Service",
+        "name": "APM Error Rate by Service",
         "type": "time",
-        "programText": "A = data('errors', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['service'])\nB = data('requests', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['service'])\nC = (A / B).publish(label='Error Rate')",
+        "programText": "A = data('service.request', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('service.instance.id', '{{instance}}') and filter('sf_error', 'true')).count(by=['sf_service'])\nB = data('service.request', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('service.instance.id', '{{instance}}')).count(by=['sf_service'])\nC = (A / B).publish(label='Error Rate')",
         "grid": { "width": 6, "height": 1, "row": 0, "column": 6 }
       },
       {
-        "name": "Suspect Dependency",
+        "name": "Support Knowledge Cache Filesystem Utilization",
         "type": "time",
-        "programText": "A = data('suspect_dependency_events', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['suspect_service']).publish(label='Suspect Service')",
+        "programText": "A = data('system.filesystem.utilization', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('service.instance.id', '{{instance}}') and filter('mountpoint', '{{cache_mountpoint}}')).max().publish(label='Cache Filesystem Utilization')",
         "grid": { "width": 12, "height": 1, "row": 1, "column": 0 }
       }
     ]
@@ -99,28 +87,16 @@
     "timeRange": "-30m",
     "charts": [
       {
-        "name": "Remediation Policy Mode Volume",
+        "name": "Orchestrator Request Duration",
         "type": "time",
-        "programText": "A = data('remediation_policy_decisions', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['policy_mode']).publish(label='Policy Decisions')",
+        "programText": "A = data('service.request.duration.ns', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('service.instance.id', '{{instance}}') and filter('sf_service', 'remediation-orchestrator')).percentile(pct=95).publish(label='P95 Duration')",
         "grid": { "width": 6, "height": 1, "row": 0, "column": 0 }
       },
       {
-        "name": "Remediation Actions Proposed",
+        "name": "Remediation Agent Request Duration",
         "type": "time",
-        "programText": "A = data('remediation_actions_proposed', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['action.type']).publish(label='Actions')",
+        "programText": "A = data('service.request.duration.ns', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('service.instance.id', '{{instance}}') and filter('sf_service', 'remediation-agent')).percentile(pct=95).publish(label='P95 Duration')",
         "grid": { "width": 6, "height": 1, "row": 0, "column": 6 }
-      },
-      {
-        "name": "Remediation Duration",
-        "type": "time",
-        "programText": "A = data('remediation_duration_ms', filter=filter('deployment.environment', '{{deployment_environment}}')).mean(by=['action.type']).publish(label='Duration')",
-        "grid": { "width": 6, "height": 1, "row": 1, "column": 0 }
-      },
-      {
-        "name": "Blast Radius Distribution",
-        "type": "time",
-        "programText": "A = data('incident_opened', filter=filter('deployment.environment', '{{deployment_environment}}')).sum(by=['blast_radius']).publish(label='Incidents')",
-        "grid": { "width": 6, "height": 1, "row": 1, "column": 6 }
       }
     ]
   }

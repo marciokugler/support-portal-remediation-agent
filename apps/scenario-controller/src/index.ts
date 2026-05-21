@@ -1,24 +1,16 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
 import { defaultPorts, localServicePort, localServiceUrl } from "@ibobs/runtime-config";
-import { BUSINESS_TRANSACTIONS } from "@ibobs/shared-types";
 import {
   annotateServerEntrySpan,
   createServiceLogger,
-  initSplunkNodeTelemetry,
-  recordFrustrationSignals,
-  recordSessionReplayCandidate
+  initSplunkNodeTelemetry
 } from "@ibobs/telemetry";
 
 export const scenarios = {
-  dependencyLatency: {
-    id: "dependency-latency",
-    name: "Customer Support Response latency increase",
-    affectedTransaction: "customer_support_response"
-  },
-  dependencyErrors: {
-    id: "dependency-errors",
-    name: "Customer Support Response error spike",
+  cacheDiskPressure: {
+    id: "cache-disk-pressure",
+    name: "Support knowledge cache volume pressure",
     affectedTransaction: "customer_support_response"
   }
 };
@@ -76,16 +68,6 @@ export function buildServer() {
       },
       body: JSON.stringify({ mode: activeScenario })
     });
-    if (activeScenario !== "healthy") {
-      recordFrustrationSignals(3, {
-        "deployment.environment": "demo",
-        journey: BUSINESS_TRANSACTIONS.customerSupportResponse
-      });
-      recordSessionReplayCandidate({
-        "deployment.environment": "demo",
-        "app.business_transaction": BUSINESS_TRANSACTIONS.customerSupportResponse
-      });
-    }
     return { activeScenario };
   });
 

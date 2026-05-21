@@ -6,52 +6,34 @@ This page is the full bring-up runbook.
 
 ### 1. Install Node workspace dependencies
 
-From the repo root:
-
 ```bash
 npm install
 ```
 
-What this does:
+Expected result:
 
-- installs workspace dependencies for all apps and packages
-- prepares the frontend, backend, simulation, and TypeScript tooling
-
-What good looks like:
-
-- command exits successfully
-- no missing package-manager errors
+- workspace dependencies install successfully
+- frontend, backend, and TypeScript tooling are available
 
 ### 2. Create the remediation agent virtual environment
 
-From the repo root:
-
 ```bash
-cd apps/remediation-agent
-python3 -m venv .venv
-.venv/bin/pip install -e .
-cd ../..
+python3 -m venv apps/remediation-agent/.venv
+apps/remediation-agent/.venv/bin/pip install -e apps/remediation-agent
 ```
 
-What this does:
+Expected result:
 
-- creates an isolated Python environment
-- installs the remediation agent in editable mode
+- `apps/remediation-agent/.venv` exists
+- the Python package installs in editable mode
 
-What good looks like:
-
-- `.venv` exists
-- the install step completes without dependency or build errors
-
-## Phase 2: start optional supporting services
+## Phase 2: start optional telemetry support
 
 ### 3. Start Docker
 
 Make sure the Docker daemon is running before you start the collector.
 
-### 4. Start the local Splunk OTel collector
-
-In a dedicated terminal:
+### 4. Start the Splunk OTel Collector
 
 ```bash
 set -a
@@ -62,16 +44,14 @@ npm run dev:collector
 
 Use this when:
 
-- you want collector-based telemetry export
-- you want to validate logs, traces, and metrics locally before opening Splunk
+- you want Splunk APM/RUM/host metrics export
+- you want to validate the cache-pressure scenario with filesystem metrics
 
-Do not block the whole workshop on this step if your main objective is just app bring-up. The workshop story is stronger with telemetry, but the application itself should be proven first.
+The host OTLP HTTP endpoint is `http://127.0.0.1:14318`.
 
 ## Phase 3: start the application stack
 
 ### 5. Start all services
-
-In another terminal:
 
 ```bash
 set -a
@@ -80,47 +60,41 @@ set +a
 npm run dev:all
 ```
 
-This should start:
+This starts:
 
-- knowledge service
-- assistant service
-- case service
-- scenario controller
-- API gateway
-- remediation orchestrator
-- remediation agent
-- frontend
-- operator console
+- knowledge service on `18103`
+- assistant service on `18101`
+- case service on `18102`
+- scenario controller on `18104`
+- API gateway on `18100`
+- remediation orchestrator on `18110`
+- remediation agent on `18800`
+- support portal on `18080`
+- operator console on `18081`
 
-### 6. Wait for steady state
-
-Do not start clicking immediately. Wait until the console output shows the services have actually bound their ports and the Vite servers are ready.
-
-### 7. Verify key local endpoints
+### 6. Verify key local endpoints
 
 Open these in your browser:
 
-- `http://127.0.0.1:5173`
-- `http://127.0.0.1:5174`
+- `http://127.0.0.1:18080`
+- `http://127.0.0.1:18081`
 
-Optional API sanity checks from a terminal:
+Optional API sanity checks:
 
 ```bash
-curl -i http://127.0.0.1:4000
-curl -i http://127.0.0.1:4004
-curl -i http://127.0.0.1:4010
-curl -i http://127.0.0.1:8000
+curl -i http://127.0.0.1:18100
+curl -i http://127.0.0.1:18104/scenario/state
+curl -i http://127.0.0.1:18110/remediation/health
+curl -i http://127.0.0.1:18800/agent/health
 ```
-
-Exact response bodies may differ, but the ports should be reachable.
 
 ## Phase 4: establish a clean baseline
 
-### 8. Exercise the healthy system
+### 7. Exercise the healthy system
 
-Before any failure injection:
+Before failure injection:
 
-1. Open the frontend.
+1. Open the support portal.
 2. Execute `Customer Support Response`.
 3. Execute `Case Status Lookup`.
 4. Execute `Knowledge Article Search`.
@@ -128,81 +102,66 @@ Before any failure injection:
 What you want to prove:
 
 - the app works at baseline
-- the three transactions are distinct
+- the three journeys are distinct
 - the audience can later understand that only one degraded
 
-### 9. Check the operator console
+### 8. Check the operator console
 
-Open the operator console and confirm:
+Confirm:
 
-- no unexpected stale incident is blocking the flow
+- no stale incident is blocking the flow
 - policy and remediation panes load
-- the UI is usable before you induce the fault
+- scenario controls are visible
 
-## Phase 5: trigger and run the incident
+## Phase 5: trigger and remediate
 
-### 10. Trigger the scenario
+### 9. Trigger cache pressure
 
-Use the scenario controls to activate the dependency latency path.
+Click `Trigger Cache Pressure`.
 
-### 11. Reproduce the degraded transaction
+The scenario fills the support-knowledge cache directory up to `SUPPORT_KNOWLEDGE_CACHE_QUOTA_BYTES`. In Docker Compose, that directory is also a shared bounded tmpfs volume mounted into the collector, so Splunk host filesystem metrics see real pressure without risking the host disk.
 
-Run `Customer Support Response` again after the scenario is active.
+### 10. Reproduce the degraded transaction
+
+Run `Customer Support Response` again.
 
 Expected result:
 
-- degraded latency and possibly failures show up for that workflow
-- the other two transactions remain healthy
+- support response latency increases
+- `support-knowledge` APM duration increases
+- filesystem utilization rises for the student instance
+- the other two transactions remain usable
 
-### 12. Drive the remediation flow
-
-The intended sequence is:
+### 11. Drive remediation
 
 1. move to the operator console
-2. copy the Splunk AI Assistant or Troubleshooting Agent summary
-3. paste it into `Paste Splunk AI Assistant Summary`
-4. click `Open Incident From Evidence`
-5. let the orchestrator enrich evidence
-6. review policy mode
-7. review agent recommendation
-8. approve the bounded action
-9. verify recovery
+2. paste the Splunk AI Assistant or Troubleshooting Agent summary
+3. click `Open Incident From Evidence`
+4. review evidence and policy
+5. click proposal/action controls
+6. approve `clean_service_cache`
+7. verify recovery
 
-## Phase 6: optional simulators
+## Optional traffic simulators
 
-### 13. Use backend traffic simulation
-
-If you want extra backend signal volume:
+Backend traffic:
 
 ```bash
 npm run simulate:traffic
 ```
 
-Use this for:
-
-- backend metrics and detectors
-- non-browser traffic generation
-
-### 14. Use browser simulation
-
-If you want real browser sessions:
+Browser traffic:
 
 ```bash
 RUM_SIMULATOR_USERS=5 RUM_SIMULATOR_ROUNDS=10 npm run simulate:rum
 ```
 
-Use this for:
-
-- Splunk RUM
-- DEA
-- session replay candidate generation
-
 ## Stop conditions
 
 Do not move into the live workshop until these are true:
 
-- frontend works
+- support portal works
 - operator console works
-- at least one healthy baseline journey was executed
-- the fault can be triggered deterministically
-- the remediation flow can be completed end to end
+- baseline journeys run
+- cache pressure can be triggered
+- `clean_service_cache` can be approved and validated

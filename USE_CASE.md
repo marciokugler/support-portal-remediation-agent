@@ -8,7 +8,7 @@ Automated Resolution, Accelerated Insights: AI Remediation Agents in Splunk Obse
 
 A company launches an AI-powered support portal to improve customer experience, reduce pressure on human agents, and scale digital service. The portal becomes a high-value customer touchpoint, which means performance or reliability issues immediately affect customer trust.
 
-During a peak usage period, a change in a dependency path or feature-flag configuration causes the AI support experience to slow down and partially fail. Splunk RUM, Digital Experience Analytics, and Session Replay expose the customer impact immediately. Splunk Observability Cloud then correlates the relevant telemetry, connects the digital experience to the backend path, and helps the team understand the likely cause. A separate remediation orchestrator receives the detector alert, accepts a human-in-the-loop summary from Splunk AI Assistant or Troubleshooting Agent, enriches missing structured fields through targeted Splunk API lookups, and then passes a bounded evidence package to the remediation agent. The team applies policy, approves the action, validates recovery, and preserves a clear audit trail.
+During a peak usage period, the cache volume used by the support knowledge service fills up. The AI support experience slows down and can partially fail because retrieval work now waits on a pressured filesystem. Splunk RUM, Digital Experience Analytics, and Session Replay expose the customer impact immediately. Splunk Observability Cloud then correlates the relevant default signals, connects the digital experience to the backend path, and helps the team understand the likely cause through APM service health and host filesystem metrics. A separate remediation orchestrator receives the detector alert, accepts a human-in-the-loop summary from Splunk AI Assistant or Troubleshooting Agent, enriches missing structured fields through targeted Splunk API lookups, and then passes a bounded evidence package to the remediation agent. The team applies policy, approves the action, validates recovery, and preserves a clear audit trail.
 
 This use case demonstrates how customers can move from observability as explanation to observability-informed action, without giving up trust, governance, or control.
 
@@ -26,7 +26,7 @@ The issue is no longer only incident detection. The issue is how to convert evid
 
 ## Customer Scenario
 
-A customer opens an AI support portal to resolve a product issue. The request enters a backend workflow that depends on a knowledge or retrieval service. A change in that dependency path introduces latency and intermittent failures.
+A customer opens an AI support portal to resolve a product issue. The request enters a backend workflow that depends on a knowledge or retrieval service. A full cache volume in that dependency introduces latency and intermittent failures.
 
 The portal supports multiple business transactions, for example:
 
@@ -47,7 +47,8 @@ From the operations point of view:
 
 - RUM and Digital Experience Analytics show the failing customer journey
 - Session Replay shows what the user actually experienced
-- telemetry shows rising latency and errors
+- APM shows rising latency and errors on the affected service path
+- Infrastructure Monitoring shows filesystem utilization on the knowledge service host or container volume
 - business transaction views show one affected workflow while others remain healthy
 - the affected path is visible, but action still requires judgment
 - the team needs to know not only what is broken, but what should happen next
@@ -81,7 +82,7 @@ Splunk Observability Cloud:
 - uses endpoint and operation grouping to keep URL-level views readable
 - surfaces latency and error patterns
 - correlates telemetry across the affected flow
-- helps identify likely cause and blast radius
+- helps identify the likely cause and affected workflow
 - provides the evidence needed to support a remediation decision
 
 ### 2. Action Layer
@@ -110,15 +111,15 @@ Primary example:
 - the detector webhook opens the incident in the orchestrator
 - the operator copies the AI Assistant summary into the orchestrator
 - the orchestrator fills missing structured fields from Splunk APIs
-- evidence indicates a recent feature or dependency change
-- the remediation agent proposes `disable_feature_flag`
+- evidence indicates cache filesystem pressure on the knowledge service dependency
+- the remediation agent proposes `clean_service_cache`
 - the action is marked `approval_required`
 - the operator approves the action
-- the feature is disabled
+- the cache pressure is cleared through the approved remediation tool
 - latency and error rates improve
 - the action and validation are recorded
 
-This path is easy for customers to understand because it is bounded, visible, and low risk compared with broader automated changes.
+This path is easy for customers to understand because it is bounded, visible in standard observability views, and low risk compared with broader automated changes.
 
 ## Why This Resonates With Customers
 

@@ -6,8 +6,12 @@ from pathlib import Path
 from opentelemetry import trace
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-from opentelemetry.instrumentation.logging import LoggingInstrumentor
 from splunk_otel import init_splunk_otel
+
+try:
+    from opentelemetry.instrumentation.openai_v2 import OpenAIInstrumentor
+except ImportError:  # pragma: no cover - optional AI monitoring package
+    OpenAIInstrumentor = None
 
 deployment_environment = os.getenv("DEPLOYMENT_ENVIRONMENT", "demo")
 service_namespace = os.getenv("OTEL_SERVICE_NAMESPACE", "ibobs2002")
@@ -111,7 +115,6 @@ def telemetry_enabled() -> bool:
 
 
 def init_agent_telemetry(app) -> bool:
-    LoggingInstrumentor().instrument(set_logging_format=False)
     if not telemetry_enabled():
         return False
 
@@ -130,6 +133,8 @@ def init_agent_telemetry(app) -> bool:
     init_splunk_otel()
     FastAPIInstrumentor.instrument_app(app)
     HTTPXClientInstrumentor().instrument()
+    if OpenAIInstrumentor is not None:
+        OpenAIInstrumentor().instrument()
     agent_logger.info("agent telemetry initialized", extra={"telemetry_enabled": True})
     return True
 

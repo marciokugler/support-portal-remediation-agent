@@ -2,44 +2,43 @@
 
 This page assumes you have about four hours until the workshop.
 
-The goal is not to perfect every optional path. The goal is to reduce risk in the core story.
-
 ## Hour 1: environment readiness
 
 Target outcome:
 
 - dependencies installed
-- `.env` prepared
-- collector optional decision made
+- `.env` prepared with a unique `INSTANCE`
+- collector decision made
 - app stack starts cleanly
 
 Checklist:
 
-1. verify Node, Python, Docker
+1. verify Node, Python, and Docker
 2. populate `.env`
 3. run `npm install`
 4. create the remediation agent virtual environment
 5. start `npm run dev:all`
-6. confirm frontend and operator console load
+6. confirm the portal and operator console load
 
 ## Hour 2: technical validation
 
 Target outcome:
 
-- baseline healthy flow proven
-- deterministic incident trigger proven
+- healthy baseline proven
+- cache-pressure trigger proven
 - remediation path proven
 
 Checklist:
 
-1. run all three business transactions in healthy mode
-2. trigger the latency scenario
+1. run all three portal transactions in healthy mode
+2. click `Trigger Cache Pressure`
 3. re-run `Customer Support Response`
-4. confirm the other two remain healthy
+4. confirm the other two journeys remain usable
 5. step through the operator console
-6. approve and validate recovery
+6. approve `clean_service_cache`
+7. validate recovery
 
-If collector telemetry matters for your talk, validate that in this hour as well.
+If Splunk telemetry matters for your talk, validate RUM/APM/filesystem signals in this hour.
 
 ## Hour 3: presenter rehearsal
 
@@ -47,15 +46,15 @@ Target outcome:
 
 - clear narration
 - no handoff confusion
-- consistent slide-to-demo transitions
+- consistent Splunk-to-console transitions
 
 Checklist:
 
-1. rehearse the baseline explanation
-2. rehearse the incident trigger
-3. rehearse the evidence-to-action explanation
-4. rehearse the approval and validation explanation
-5. rehearse the close on governance and trust
+1. rehearse the portal explanation
+2. rehearse the cache-pressure trigger
+3. rehearse where to click in Splunk
+4. rehearse the evidence-to-action explanation
+5. rehearse approval and validation
 
 ## Hour 4: stabilization
 
@@ -63,34 +62,27 @@ Target outcome:
 
 - known-good terminals
 - browser windows arranged
-- fallback path ready
+- fallback evidence text ready
 
 Checklist:
 
 1. restart only if necessary
 2. clear stale browser tabs
-3. keep one terminal on app logs
-4. keep another terminal on collector logs if telemetry is part of the rehearsal
+3. keep one terminal on the app stack
+4. keep another terminal on the collector if telemetry is part of the rehearsal
 5. bookmark the fallback story if live signals drift
 
 ## Final 15-minute checklist
 
-Right before the workshop:
+1. portal loads on `18080`
+2. operator console loads on `18081`
+3. one healthy support response works
+4. cache pressure can still be triggered
+5. presenter knows the fallback narrative
 
-1. verify the frontend loads
-2. verify the operator console loads
-3. verify one healthy support response works
-4. verify the scenario can still be triggered
-5. verify the presenter knows the fallback narrative
+## Avoid last-minute changes
 
-## What not to spend time on
-
-Avoid last-minute detours into:
-
-- design polish
-- non-critical refactors
-- changing default ports
-- rewriting telemetry strategy
+- changing ports
+- changing telemetry strategy
 - adding new demo scope
-
-The workshop succeeds if the story is clear and the core flow is repeatable.
+- refactoring non-critical code

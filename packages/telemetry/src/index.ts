@@ -19,6 +19,5 @@ export function buildTelemetryAttributes(transaction: keyof typeof businessTrans
 
 export * from "./node";
 export * from "./splunk-node";
-export * from "./metrics";
 export * from "./logger";
 export * from "./config";

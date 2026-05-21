@@ -13,6 +13,11 @@ variable "deployment_environment" {
   default = "demo"
 }
 
+variable "instance" {
+  type    = string
+  default = "student-001"
+}
+
 variable "orchestrator_webhook_url" {
   type = string
 }
@@ -38,27 +43,22 @@ variable "existing_webhook_credential_id" {
   default = ""
 }
 
-variable "customer_support_latency_threshold_ms" {
+variable "filesystem_utilization_threshold" {
   type    = number
-  default = 1800
+  default = 0.85
 }
 
-variable "customer_support_error_threshold" {
-  type    = number
-  default = 0.1
+variable "cache_mountpoint" {
+  type    = string
+  default = "/var/cache/support-knowledge"
 }
 
-variable "knowledge_search_error_threshold" {
+variable "apm_latency_threshold_ns" {
   type    = number
-  default = 2
+  default = 1800000000
 }
 
-variable "remediation_duration_threshold_ms" {
+variable "apm_error_threshold" {
   type    = number
-  default = 120000
-}
-
-variable "max_affected_transactions" {
-  type    = number
-  default = 1
+  default = 0.05
 }

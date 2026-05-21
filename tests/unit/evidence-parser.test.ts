@@ -1,55 +1,40 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { parseAssistantEvidence } from "../../packages/evidence-parser/src/index.ts";
-import { ACTION_TYPES, BLAST_RADIUS, BUSINESS_TRANSACTIONS } from "../../packages/shared-types/src/index.ts";
+import { ACTION_TYPES, BUSINESS_TRANSACTIONS } from "../../packages/shared-types/src/index.ts";
 
-test("parseAssistantEvidence extracts structured signals from assistant text", () => {
+test("parseAssistantEvidence extracts cache pressure remediation signals", () => {
   const parsed = parseAssistantEvidence({
     source: "splunk_ai_assistant",
     rawText: `High confidence latency regression detected.
 Business transaction: Customer Support Response
-Blast radius: medium
-Feature flag: support_knowledge_v2
-Recent change: canary enabled for support_knowledge_v2
-Release version: 2.1.0-canary`
+Service: support-knowledge
+Disk utilization: cache mount above 90 percent
+Latency evidence: support-knowledge p90 latency is elevated
+Recommended action: clean_service_cache.`
   });
 
   assert.equal(parsed.inferredTransaction, BUSINESS_TRANSACTIONS.customerSupportResponse);
   assert.equal(parsed.confidenceBand, "high");
-  assert.equal(parsed.blastRadius, BLAST_RADIUS.medium);
-  assert.deepEqual(parsed.candidateActions, [ACTION_TYPES.disableFeatureFlag]);
-  assert.match(parsed.likelyCause, /support_knowledge_v2/);
-  assert.match(parsed.likelyCause, /2\.1\.0-canary/);
+  assert.deepEqual(parsed.candidateActions, [ACTION_TYPES.cleanServiceCache]);
+  assert.match(parsed.likelyCause, /cache mount/);
+  assert.match(parsed.likelyCause, /support-knowledge/);
 });
 
-test("parseAssistantEvidence falls back to rollback plus disable flag when rollback is recommended", () => {
+test("parseAssistantEvidence includes restart only when it is explicitly recommended", () => {
   const parsed = parseAssistantEvidence({
     source: "splunk_ai_assistant",
-    rawText: "Rollback the canary for knowledge article search because the blast radius is high."
+    rawText: "High confidence service pressure on support-knowledge. Restart the service only if cache cleanup fails."
   });
 
-  assert.equal(parsed.inferredTransaction, BUSINESS_TRANSACTIONS.knowledgeArticleSearch);
-  assert.equal(parsed.blastRadius, BLAST_RADIUS.high);
+  assert.equal(parsed.inferredTransaction, BUSINESS_TRANSACTIONS.customerSupportResponse);
   assert.deepEqual(parsed.candidateActions, [
-    ACTION_TYPES.disableFeatureFlag,
-    ACTION_TYPES.rollbackCanary
+    ACTION_TYPES.cleanServiceCache,
+    ACTION_TYPES.restartService
   ]);
 });
 
-test("parseAssistantEvidence keeps confidence separate from blast radius", () => {
-  const parsed = parseAssistantEvidence({
-    source: "splunk_ai_assistant",
-    rawText: `High confidence that support_knowledge_v2 degraded the Customer Support Response transaction.
-Likely blast radius is medium because only one business transaction is materially affected.
-Recommended action: disable_feature_flag.`
-  });
-
-  assert.equal(parsed.confidenceBand, "high");
-  assert.equal(parsed.blastRadius, BLAST_RADIUS.medium);
-  assert.equal(parsed.inferredTransaction, BUSINESS_TRANSACTIONS.customerSupportResponse);
-});
-
-test("parseAssistantEvidence defaults to customer support and medium confidence when evidence is sparse", () => {
+test("parseAssistantEvidence defaults to cache cleanup and medium confidence when evidence is sparse", () => {
   const parsed = parseAssistantEvidence({
     source: "splunk_ai_assistant",
     rawText: "Something is slow."
@@ -57,6 +42,5 @@ test("parseAssistantEvidence defaults to customer support and medium confidence 
 
   assert.equal(parsed.inferredTransaction, BUSINESS_TRANSACTIONS.customerSupportResponse);
   assert.equal(parsed.confidenceBand, "medium");
-  assert.equal(parsed.blastRadius, BLAST_RADIUS.medium);
-  assert.deepEqual(parsed.candidateActions, [ACTION_TYPES.disableFeatureFlag]);
+  assert.deepEqual(parsed.candidateActions, [ACTION_TYPES.cleanServiceCache]);
 });

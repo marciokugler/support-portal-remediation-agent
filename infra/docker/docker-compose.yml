@@ -5,35 +5,36 @@ services:
     environment:
       SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
       SPLUNK_REALM: ${SPLUNK_REALM:-us1}
-      SPLUNK_HEC_TOKEN: ${SPLUNK_HEC_TOKEN:-}
-      SPLUNK_HEC_URL: ${SPLUNK_HEC_URL:-}
-      SPLUNK_HEC_INDEX: ${SPLUNK_HEC_INDEX:-observability}
+      DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
+      INSTANCE: ${INSTANCE:-student-001}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001,deployment.environment=demo}
     command:
       - "--config=/etc/otel/config.yaml"
     volumes:
       - ../otel-collector/config.yaml:/etc/otel/config.yaml:ro
       - ../../:/workspace:ro
       - /:/hostfs:ro
+      - support_knowledge_cache:/var/cache/support-knowledge:ro
     ports:
-      - "4317:4317"
-      - "4318:4318"
+      - "14317:4317"
+      - "14318:4318"
   frontend:
     image: node:22
     working_dir: /workspace
     environment:
-      VITE_API_BASE_URL: http://api-gateway:4000
-      VITE_ORCHESTRATOR_BASE_URL: http://remediation-orchestrator:4010
-      VITE_SCENARIO_CONTROLLER_BASE_URL: http://scenario-controller:4004
+      VITE_API_BASE_URL: http://api-gateway:18100
+      VITE_ORCHESTRATOR_BASE_URL: http://remediation-orchestrator:18110
+      VITE_SCENARIO_CONTROLLER_BASE_URL: http://scenario-controller:18104
       VITE_SPLUNK_REALM: ${VITE_SPLUNK_REALM:-${SPLUNK_REALM:-us1}}
       VITE_SPLUNK_RUM_TOKEN: ${VITE_SPLUNK_RUM_TOKEN:-}
     command: >
       sh -lc "npm install &&
-      npm run dev --workspace @ibobs/frontend -- --host 0.0.0.0 --port 5173"
+      npm run dev --workspace @ibobs/frontend -- --host 0.0.0.0 --port 18080"
     volumes:
       - ../../:/workspace
       - node_modules:/workspace/node_modules
     ports:
-      - "5173:5173"
+      - "18080:18080"
     depends_on:
       - splunk-otel-collector
       - api-gateway
@@ -41,29 +42,31 @@ services:
     image: node:22
     working_dir: /workspace
     environment:
-      VITE_ORCHESTRATOR_BASE_URL: http://remediation-orchestrator:4010
-      VITE_SCENARIO_CONTROLLER_BASE_URL: http://scenario-controller:4004
+      VITE_ORCHESTRATOR_BASE_URL: http://remediation-orchestrator:18110
+      VITE_SCENARIO_CONTROLLER_BASE_URL: http://scenario-controller:18104
     command: >
       sh -lc "npm install &&
-      npm run dev --workspace @ibobs/operator-console -- --host 0.0.0.0 --port 5174"
+      npm run dev --workspace @ibobs/operator-console -- --host 0.0.0.0 --port 18081"
     volumes:
       - ../../:/workspace
       - node_modules:/workspace/node_modules
     ports:
-      - "5174:5174"
+      - "18081:18081"
     depends_on:
       - remediation-orchestrator
   api-gateway:
     image: node:22
     working_dir: /workspace
     environment:
-      API_GATEWAY_PORT: 4000
-      ASSISTANT_SERVICE_BASE_URL: http://assistant-service:4001
-      CASE_SERVICE_BASE_URL: http://case-service:4002
-      KNOWLEDGE_SERVICE_BASE_URL: http://knowledge-service:4003
+      API_GATEWAY_PORT: 18100
+      ASSISTANT_SERVICE_BASE_URL: http://assistant-service:18101
+      CASE_SERVICE_BASE_URL: http://case-service:18102
+      KNOWLEDGE_SERVICE_BASE_URL: http://knowledge-service:18103
       SPLUNK_REALM: ${SPLUNK_REALM:-}
       SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
       DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
+      INSTANCE: ${INSTANCE:-student-001}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001}
       OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -76,7 +79,7 @@ services:
       - ../../:/workspace
       - node_modules:/workspace/node_modules
     ports:
-      - "4000:4000"
+      - "18100:18100"
     depends_on:
       - splunk-otel-collector
       - assistant-service
@@ -86,11 +89,13 @@ services:
     image: node:22
     working_dir: /workspace
     environment:
-      ASSISTANT_SERVICE_PORT: 4001
-      KNOWLEDGE_SERVICE_BASE_URL: http://knowledge-service:4003
+      ASSISTANT_SERVICE_PORT: 18101
+      KNOWLEDGE_SERVICE_BASE_URL: http://knowledge-service:18103
       SPLUNK_REALM: ${SPLUNK_REALM:-}
       SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
       DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
+      INSTANCE: ${INSTANCE:-student-001}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001}
       OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -103,7 +108,7 @@ services:
       - ../../:/workspace
       - node_modules:/workspace/node_modules
     ports:
-      - "4001:4001"
+      - "18101:18101"
     depends_on:
       - splunk-otel-collector
       - knowledge-service
@@ -111,10 +116,12 @@ services:
     image: node:22
     working_dir: /workspace
     environment:
-      CASE_SERVICE_PORT: 4002
+      CASE_SERVICE_PORT: 18102
       SPLUNK_REALM: ${SPLUNK_REALM:-}
       SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
       DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
+      INSTANCE: ${INSTANCE:-student-001}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001}
       OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -127,37 +134,45 @@ services:
       - ../../:/workspace
       - node_modules:/workspace/node_modules
     ports:
-      - "4002:4002"
+      - "18102:18102"
   knowledge-service:
     image: node:22
     working_dir: /workspace
     environment:
-      KNOWLEDGE_SERVICE_PORT: 4003
+      KNOWLEDGE_SERVICE_PORT: 18103
       SPLUNK_REALM: ${SPLUNK_REALM:-}
       SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
       DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
+      INSTANCE: ${INSTANCE:-student-001}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001}
       OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_PROPAGATORS: tracecontext,baggage,b3
       SPLUNK_PROFILER_ENABLED: ${SPLUNK_PROFILER_ENABLED:-false}
+      SUPPORT_KNOWLEDGE_CACHE_DIR: /var/cache/support-knowledge
+      SUPPORT_KNOWLEDGE_CACHE_FILL_PERCENT: ${SUPPORT_KNOWLEDGE_CACHE_FILL_PERCENT:-92}
+      SUPPORT_KNOWLEDGE_CACHE_QUOTA_BYTES: ${SUPPORT_KNOWLEDGE_CACHE_QUOTA_BYTES:-134217728}
     command: >
       sh -lc "npm install &&
       npm run dev --workspace @ibobs/knowledge-service"
     volumes:
       - ../../:/workspace
       - node_modules:/workspace/node_modules
+      - support_knowledge_cache:/var/cache/support-knowledge
     ports:
-      - "4003:4003"
+      - "18103:18103"
   scenario-controller:
     image: node:22
     working_dir: /workspace
     environment:
-      SCENARIO_CONTROLLER_PORT: 4004
-      KNOWLEDGE_SERVICE_BASE_URL: http://knowledge-service:4003
+      SCENARIO_CONTROLLER_PORT: 18104
+      KNOWLEDGE_SERVICE_BASE_URL: http://knowledge-service:18103
       SPLUNK_REALM: ${SPLUNK_REALM:-}
       SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
       DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
+      INSTANCE: ${INSTANCE:-student-001}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001}
       OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -170,7 +185,7 @@ services:
       - ../../:/workspace
       - node_modules:/workspace/node_modules
     ports:
-      - "4004:4004"
+      - "18104:18104"
     depends_on:
       - splunk-otel-collector
       - knowledge-service
@@ -178,12 +193,14 @@ services:
     image: node:22
     working_dir: /workspace
     environment:
-      ORCHESTRATOR_PORT: 4010
-      REMEDIATION_AGENT_BASE_URL: http://remediation-agent:8000
+      ORCHESTRATOR_PORT: 18110
+      REMEDIATION_AGENT_BASE_URL: http://remediation-agent:18800
       SPLUNK_REALM: ${SPLUNK_REALM:-}
       SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
       SPLUNK_API_BASE_URL: ${SPLUNK_API_BASE_URL:-https://api.us1.signalfx.com}
       DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
+      INSTANCE: ${INSTANCE:-student-001}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001}
       OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -196,7 +213,7 @@ services:
       - ../../:/workspace
       - node_modules:/workspace/node_modules
     ports:
-      - "4010:4010"
+      - "18110:18110"
     depends_on:
       - splunk-otel-collector
       - remediation-agent
@@ -204,13 +221,17 @@ services:
     image: python:3.12
     working_dir: /workspace
     environment:
-      REMEDIATION_AGENT_PORT: 8000
+      REMEDIATION_AGENT_PORT: 18800
       OTEL_SERVICE_NAME: remediation-agent
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      SCENARIO_CONTROLLER_BASE_URL: http://scenario-controller:18104
+      API_GATEWAY_BASE_URL: http://api-gateway:18100
       SPLUNK_REALM: ${SPLUNK_REALM:-}
       SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
       DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
+      INSTANCE: ${INSTANCE:-student-001}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001}
       OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -219,13 +240,19 @@ services:
       sh -lc "python -m venv /opt/venv &&
       . /opt/venv/bin/activate &&
       pip install -e /workspace/apps/remediation-agent &&
-      uvicorn app.main:app --app-dir /workspace/apps/remediation-agent --host 0.0.0.0 --port 8000"
+      uvicorn app.main:app --app-dir /workspace/apps/remediation-agent --host 0.0.0.0 --port 18800"
     volumes:
       - ../../:/workspace
       - python_venv:/opt/venv
     ports:
-      - "8000:8000"
+      - "18800:18800"
 
 volumes:
   node_modules:
   python_venv:
+  support_knowledge_cache:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=128m

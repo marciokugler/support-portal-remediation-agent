@@ -18,6 +18,7 @@ nav:
       - Environment Setup: workshop/environment.md
       - Install and Start: workshop/install-and-start.md
       - Live Demo Flow: workshop/live-demo-flow.md
+      - Span Attribute Exercises: workshop/span-attribute-exercises.md
       - Troubleshooting: workshop/troubleshooting.md
       - Rehearsal Plan: workshop/rehearsal-plan.md
       - Architecture Summary: workshop/architecture.md
