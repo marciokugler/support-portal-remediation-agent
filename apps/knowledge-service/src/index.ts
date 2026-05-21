@@ -113,10 +113,13 @@ async function maybeDelay(transaction: string) {
 }
 
 function knowledgeAttributes(transaction: string) {
+  const pressureAffectsTransaction =
+    activeScenario === "cache-disk-pressure" && transaction === BUSINESS_TRANSACTIONS.customerSupportResponse;
+
   return {
     "app.business_transaction": transaction,
     "app.scenario": activeScenario,
-    "app.failure_mode": activeScenario === "cache-disk-pressure" ? "filesystem_pressure" : "none"
+    "app.failure_mode": pressureAffectsTransaction ? "filesystem_pressure" : "none"
   };
 }
 
