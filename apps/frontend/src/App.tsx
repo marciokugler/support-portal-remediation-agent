@@ -126,7 +126,6 @@ export function App() {
 
   useEffect(() => {
     setJourneyContext({
-      "app.business_transaction": "customer_support_response",
       "app.active_scenario": activeScenario
     });
   }, [activeScenario]);

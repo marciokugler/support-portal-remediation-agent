@@ -109,6 +109,19 @@ Look for:
 - host filesystem metric `system.filesystem.utilization`
 - RUM data for the portal if `VITE_SPLUNK_RUM_TOKEN` is set
 
+If RUM sessions are missing:
+
+1. confirm the portal container has `VITE_SPLUNK_SESSION_REPLAY_ENABLED=true`
+2. restart the portal
+3. generate fresh browser traffic after the restart
+4. wait a few minutes, then use `Session Search`
+
+Useful check:
+
+```bash
+docker compose --env-file .env -f infra/docker/docker-compose.yml exec -T frontend env | grep VITE_SPLUNK_SESSION_REPLAY_ENABLED
+```
+
 ## Remediation recommendation or execution is missing
 
 Check:

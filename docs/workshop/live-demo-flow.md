@@ -74,6 +74,17 @@ Narrate:
 
 > We are not relying on logs or custom demo metrics. We are using the default signals students should expect in a real environment: browser experience, APM service health, and host filesystem metrics from the collector.
 
+RUM click path:
+
+1. Open `Digital Experience`.
+2. Open the RUM application named `ibobs-support-portal`.
+3. Stay on `UX Metrics` only long enough to prove page traffic is arriving.
+4. Click `Custom Workflows`.
+5. Look for `ui.Customer Support Response`.
+6. If the workflow list is empty, click `Network Requests` and open `/api/support/respond`.
+7. Use `Session Search` only after session replay is enabled and new browser sessions have been generated.
+8. In `Session Search`, filter to the support portal app and the last 15 minutes, then open a recent session with slow `/api/support/respond` activity.
+
 ### 6. Ask Splunk AI Assistant for evidence
 
 Use this prompt:

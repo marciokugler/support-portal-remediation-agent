@@ -73,12 +73,21 @@ export async function trackBusinessTransaction<T>(
   fn: () => Promise<T>
 ) {
   const tracer = trace.getTracer("ibobs-frontend");
+  const transactionName = String(attributes["app.transaction_name"] ?? transactionId);
+  const workflowAttributes = {
+    ...attributes,
+    "app.workflow_name": transactionName,
+    "app.workflow_action": actionName
+  };
 
-  return tracer.startActiveSpan(`ui.${actionName}`, { attributes }, async (span) => {
+  SplunkRum.setGlobalAttributes(workflowAttributes);
+
+  return tracer.startActiveSpan(`ui.${transactionName}`, { attributes: workflowAttributes }, async (span) => {
     try {
       const result = await fn();
       span.setAttributes({
         "app.business_transaction": transactionId,
+        "app.transaction_name": transactionName,
         "app.transaction_result": "success"
       });
       return result;
@@ -86,6 +95,7 @@ export async function trackBusinessTransaction<T>(
       span.setStatus({ code: SpanStatusCode.ERROR });
       span.setAttributes({
         "app.business_transaction": transactionId,
+        "app.transaction_name": transactionName,
         "app.transaction_result": "failure"
       });
       await SplunkRum.reportError(error instanceof Error ? error : String(error));

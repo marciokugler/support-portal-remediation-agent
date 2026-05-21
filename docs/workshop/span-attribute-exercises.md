@@ -83,7 +83,9 @@ In Splunk Observability:
 1. Filter to the student `INSTANCE`.
 2. In Infrastructure Monitoring, find filesystem utilization.
 3. In APM, find `support-knowledge` request duration.
-4. In RUM/APM, inspect the Customer Support Response trace path.
+4. In RUM, click `Custom Workflows` and look for `ui.Customer Support Response`.
+5. If the workflow is not visible yet, click `Network Requests` and inspect `/api/support/respond`.
+6. In APM, inspect the Customer Support Response trace path.
 
 Signals to look for:
 
