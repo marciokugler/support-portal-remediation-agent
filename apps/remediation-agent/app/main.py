@@ -41,8 +41,8 @@ class ActionRequest(BaseModel):
     businessTransaction: str | None = None
 
 
-scenario_controller_base_url = os.getenv("SCENARIO_CONTROLLER_BASE_URL", "http://127.0.0.1:4004")
-api_gateway_base_url = os.getenv("API_GATEWAY_BASE_URL", "http://127.0.0.1:4000")
+scenario_controller_base_url = os.getenv("SCENARIO_CONTROLLER_BASE_URL", "http://127.0.0.1:18104")
+api_gateway_base_url = os.getenv("API_GATEWAY_BASE_URL", "http://127.0.0.1:18100")
 validation_latency_threshold_ms = float(os.getenv("REMEDIATION_VALIDATION_LATENCY_THRESHOLD_MS", "1200"))
 
 
@@ -92,7 +92,7 @@ def health() -> dict[str, str]:
 
 @app.post("/agent/evaluate")
 def evaluate(payload: EvaluateRequest) -> dict:
-    candidate_actions = payload.candidateActions or ["disable_feature_flag"]
+    candidate_actions = payload.candidateActions or ["clean_service_cache"]
     client = openai_client()
 
     reasoning_summary = payload.likelyCause
@@ -116,8 +116,8 @@ def evaluate(payload: EvaluateRequest) -> dict:
                 input=prompt,
             )
             reasoning_summary = response.output_text or payload.likelyCause
-            if "rollback" in reasoning_summary.lower() and "rollback_canary" in candidate_actions:
-                recommended_action = "rollback_canary"
+            if "restart" in reasoning_summary.lower() and "restart_service" in candidate_actions:
+                recommended_action = "restart_service"
         except Exception as error:
             agent_logger.warning(
                 "openai remediation call failed; using fallback path",
@@ -172,10 +172,14 @@ def execute(action_id: str, payload: ActionRequest) -> dict:
     scenario_state = "unknown"
 
     try:
-        if payload.actionType in {"disable_feature_flag", "rollback_canary"}:
+        if payload.actionType == "clean_service_cache":
             _, response_payload = post_json(f"{scenario_controller_base_url}/scenario/reset")
             scenario_state = response_payload.get("activeScenario", "unknown")
-            notes.append("Reset customer-impacting scenario through the scenario controller.")
+            notes.append("Cleaned support-knowledge cache volume through the scenario controller.")
+        elif payload.actionType == "restart_service":
+            _, response_payload = post_json(f"{scenario_controller_base_url}/scenario/reset")
+            scenario_state = response_payload.get("activeScenario", "unknown")
+            notes.append("Restart-style fallback reset the affected service scenario.")
         else:
             status = "failed"
             notes.append(f"Action type {payload.actionType} is not wired to a demo control plane.")

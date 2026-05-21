@@ -1,5 +1,7 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
+import { mkdir, readdir, rm, stat, statfs, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { defaultPorts, localServicePort } from "@ibobs/runtime-config";
 import { BUSINESS_TRANSACTIONS } from "@ibobs/shared-types";
 import {
@@ -9,9 +11,6 @@ import {
   buildTelemetryAttributes,
   createServiceLogger,
   initSplunkNodeTelemetry,
-  recordError,
-  recordLatency,
-  recordRequest,
   runInSpan
 } from "@ibobs/telemetry";
 
@@ -22,35 +21,103 @@ export const knowledgeService = {
     BUSINESS_TRANSACTIONS.knowledgeArticleSearch
   ],
   telemetry: buildTelemetryAttributes(BUSINESS_TRANSACTIONS.knowledgeArticleSearch),
-  failureModes: ["latency", "errors", "malformed-response"]
+  failureModes: ["cache-disk-pressure"]
 };
 
-type ScenarioMode = "healthy" | "dependency-latency" | "dependency-errors";
+type ScenarioMode = "healthy" | "cache-disk-pressure";
 
 let activeScenario: ScenarioMode = "healthy";
-const featureFlagName = "support_knowledge_v2";
-const stableKnowledgeVersion = process.env.KNOWLEDGE_STABLE_VERSION ?? "2.0.4";
-const canaryKnowledgeVersion = process.env.KNOWLEDGE_CANARY_VERSION ?? "2.1.0-canary";
+const cacheDirectory = process.env.SUPPORT_KNOWLEDGE_CACHE_DIR ?? "/tmp/ciscolive26-support-knowledge-cache";
+const cacheFillTargetPercent = Number(process.env.SUPPORT_KNOWLEDGE_CACHE_FILL_PERCENT ?? "92");
+const cacheBlockBytes = Number(process.env.SUPPORT_KNOWLEDGE_CACHE_BLOCK_BYTES ?? 1024 * 1024);
+const cacheQuotaBytes = Number(process.env.SUPPORT_KNOWLEDGE_CACHE_QUOTA_BYTES ?? 128 * 1024 * 1024);
 
-function knowledgeChangeAttributes(transaction: string) {
-  const featureEnabled = activeScenario !== "healthy";
-  const releaseVersion = featureEnabled ? canaryKnowledgeVersion : stableKnowledgeVersion;
+async function cachePressureBytes() {
+  await mkdir(cacheDirectory, { recursive: true });
+  const entries = await readdir(cacheDirectory, { withFileTypes: true });
+  const fileSizes = await Promise.all(
+    entries
+      .filter((entry) => entry.name.startsWith("cache-pressure-") && entry.isFile())
+      .map(async (entry) => stat(join(cacheDirectory, entry.name)).then((file) => file.size))
+  );
+  return fileSizes.reduce((total, size) => total + size, 0);
+}
+
+async function cacheStatus() {
+  await mkdir(cacheDirectory, { recursive: true });
+  const stats = await statfs(cacheDirectory);
+  const filesystemTotalBytes = Number(stats.blocks) * Number(stats.bsize);
+  const filesystemFreeBytes = Number(stats.bavail) * Number(stats.bsize);
+  const filesystemUsedBytes = Math.max(filesystemTotalBytes - filesystemFreeBytes, 0);
+  const filesystemUsedPercent =
+    filesystemTotalBytes > 0 ? Math.round((filesystemUsedBytes / filesystemTotalBytes) * 1000) / 10 : 0;
+  const totalBytes = cacheQuotaBytes > 0 ? cacheQuotaBytes : filesystemTotalBytes;
+  const usedBytes = Math.min(await cachePressureBytes(), totalBytes);
+  const freeBytes = Math.max(totalBytes - usedBytes, 0);
+  const usedPercent = totalBytes > 0 ? Math.round((usedBytes / totalBytes) * 1000) / 10 : 0;
 
   return {
-    "feature_flag.key": featureFlagName,
-    "feature_flag.provider_name": "demo-control-plane",
-    "feature_flag.variant": featureEnabled ? "enabled" : "disabled",
-    "demo.recent_change": featureEnabled ? `${featureFlagName} enabled` : `${featureFlagName} disabled`,
-    "demo.release_version": releaseVersion,
-    "app.release_version": releaseVersion,
-    "app.business_transaction": transaction
+    path: cacheDirectory,
+    totalBytes,
+    freeBytes,
+    usedBytes,
+    usedPercent,
+    filesystemTotalBytes,
+    filesystemFreeBytes,
+    filesystemUsedBytes,
+    filesystemUsedPercent
   };
 }
 
-async function maybeDelay(transaction: string) {
-  if (activeScenario === "dependency-latency" && transaction === BUSINESS_TRANSACTIONS.customerSupportResponse) {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+async function clearDemoCache() {
+  await mkdir(cacheDirectory, { recursive: true });
+  const entries = await readdir(cacheDirectory, { withFileTypes: true });
+  await Promise.all(
+    entries
+      .filter((entry) => entry.name.startsWith("cache-pressure-"))
+      .map((entry) => rm(join(cacheDirectory, entry.name), { recursive: true, force: true }))
+  );
+}
+
+async function createCachePressure() {
+  await clearDemoCache();
+  const block = Buffer.alloc(cacheBlockBytes, "x");
+  let status = await cacheStatus();
+  const maxBlocks = Number(process.env.SUPPORT_KNOWLEDGE_CACHE_MAX_BLOCKS ?? "2048");
+  let blockIndex = 0;
+
+  while (status.usedPercent < cacheFillTargetPercent && blockIndex < maxBlocks) {
+    try {
+      await writeFile(join(cacheDirectory, `cache-pressure-${String(blockIndex).padStart(4, "0")}.bin`), block);
+    } catch (error) {
+      if (error && typeof error === "object" && "code" in error && error.code === "ENOSPC") {
+        break;
+      }
+      throw error;
+    }
+    blockIndex += 1;
+    status = await cacheStatus();
   }
+
+  return status;
+}
+
+async function maybeDelay(transaction: string) {
+  if (activeScenario !== "cache-disk-pressure" || transaction !== BUSINESS_TRANSACTIONS.customerSupportResponse) {
+    return;
+  }
+
+  const status = await cacheStatus();
+  const delayMs = status.usedPercent >= 85 ? 2200 : 900;
+  await new Promise((resolve) => setTimeout(resolve, delayMs));
+}
+
+function knowledgeAttributes(transaction: string) {
+  return {
+    "app.business_transaction": transaction,
+    "app.scenario": activeScenario,
+    "app.failure_mode": activeScenario === "cache-disk-pressure" ? "filesystem_pressure" : "none"
+  };
 }
 
 export function buildServer() {
@@ -83,69 +150,51 @@ export function buildServer() {
   });
 
   app.get("/knowledge/health", async () => ({ status: "ok", service: knowledgeService.name }));
+  app.get("/knowledge/cache/status", async () => cacheStatus());
   app.get("/knowledge/scenario", async () => ({
     activeScenario,
-    featureFlag: {
-      name: featureFlagName,
-      state: activeScenario === "healthy" ? "disabled" : "enabled",
-      releaseVersion: activeScenario === "healthy" ? stableKnowledgeVersion : canaryKnowledgeVersion
-    }
+    cache: await cacheStatus()
   }));
   app.post("/knowledge/scenario", async (request) => {
     activeScenario = ((request.body as { mode?: ScenarioMode }).mode ?? "healthy") as ScenarioMode;
-    request.log.info({ activeScenario }, "knowledge scenario updated");
+    const cache =
+      activeScenario === "cache-disk-pressure"
+        ? await createCachePressure()
+        : await clearDemoCache().then(() => cacheStatus());
+    request.log.info({ activeScenario, cache }, "knowledge scenario updated");
     return {
       activeScenario,
-      featureFlag: {
-        name: featureFlagName,
-        state: activeScenario === "healthy" ? "disabled" : "enabled",
-        releaseVersion: activeScenario === "healthy" ? stableKnowledgeVersion : canaryKnowledgeVersion
-      }
+      cache
     };
   });
   app.post("/knowledge/query", async (request, reply) => {
     const transaction = (request.body as { transaction?: string }).transaction ?? BUSINESS_TRANSACTIONS.knowledgeArticleSearch;
     request.log.info({ knowledgeRequest: request.body, transaction, activeScenario }, "knowledge query received");
-    const startedAt = performance.now();
     const telemetry = {
       ...buildTelemetryAttributes(transaction),
-      ...knowledgeChangeAttributes(transaction)
+      ...knowledgeAttributes(transaction)
     };
     annotateCurrentSpan(telemetry);
-    await runInSpan("knowledge.apply_scenario", telemetry, () => maybeDelay(transaction));
+    await runInSpan("knowledge.apply_cache_pressure", telemetry, () => maybeDelay(transaction));
 
-    if (activeScenario === "dependency-errors" && transaction === BUSINESS_TRANSACTIONS.customerSupportResponse) {
-      recordLatency(performance.now() - startedAt, {
-        ...telemetry,
-        service: knowledgeService.name
-      });
-      recordRequest({
-        ...telemetry,
-        service: knowledgeService.name
-      });
-      recordError({
-        ...telemetry,
-        service: knowledgeService.name
-      });
+    const cache = await cacheStatus();
+    const cacheFullForSupport =
+      activeScenario === "cache-disk-pressure" &&
+      transaction === BUSINESS_TRANSACTIONS.customerSupportResponse &&
+      cache.usedPercent >= 98;
+
+    if (cacheFullForSupport) {
       reply.code(503);
-      request.log.warn({ transaction, activeScenario }, "knowledge dependency failure simulated");
+      request.log.warn({ transaction, activeScenario, cache }, "knowledge cache volume is full");
       return {
         transaction,
         telemetry,
         scenario: activeScenario,
-        error: "Knowledge dependency is failing for the customer support response workflow."
+        error: "Knowledge cache volume is full for the customer support response workflow."
       };
     }
 
-    recordLatency(performance.now() - startedAt, {
-      ...telemetry,
-      service: knowledgeService.name
-    });
-    recordRequest({
-      ...telemetry,
-      service: knowledgeService.name
-    });
-    request.log.info({ transaction, activeScenario }, "knowledge query served");
+    request.log.info({ transaction, activeScenario, cache }, "knowledge query served");
 
     return {
       transaction,
@@ -165,7 +214,7 @@ if (process.env.NODE_ENV !== "test") {
   initSplunkNodeTelemetry(knowledgeService.name);
   const port = localServicePort(process.env, "KNOWLEDGE_SERVICE_PORT", defaultPorts.knowledgeService);
   const server = buildServer();
-  server.log.info({ knowledgeService }, "knowledge-service scaffold ready");
+  server.log.info({ knowledgeService, cacheDirectory, cacheQuotaBytes }, "knowledge-service scaffold ready");
   server.listen({ port, host: "0.0.0.0" }).catch((error) => {
     server.log.error(error);
     process.exit(1);

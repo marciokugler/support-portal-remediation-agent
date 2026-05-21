@@ -67,7 +67,7 @@ Demo incident:
 
 - auto-instrument HTTP/framework spans
 - manual spans for business operations
-- structured logs correlated with traces
+- default APM and host metrics as the primary incident evidence
 - stable business attributes
 
 ### Agent

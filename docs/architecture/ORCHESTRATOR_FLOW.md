@@ -2,29 +2,31 @@
 
 ## Purpose
 
-The remediation orchestrator is the governance layer between Splunk investigation and automated action.
+The remediation orchestrator is the governance layer between Splunk investigation and bounded action.
 
 ## Flow
 
-1. Splunk detector fires on `Customer Support Response`.
-2. Presenter investigates in Splunk and copies the AI Assistant or Troubleshooting Agent summary.
-3. Operator pastes the summary into the operator console.
-4. Operator clicks `Open Incident From Evidence`.
-5. Operator console opens the incident through `POST /remediation/demo/incidents`.
-6. Summary is posted to `POST /remediation/context`.
-7. Orchestrator parses narrative evidence.
-8. Orchestrator enriches missing structured fields with targeted Splunk API lookups.
-9. Orchestrator builds the final `EvidenceBundle`.
-10. Policy engine determines whether the incident is eligible for remediation and which policy mode applies.
-11. Remediation agent evaluates bounded actions.
-12. Operator approves the action.
-13. Action executes and recovery is verified.
+1. Cache pressure degrades `Customer Support Response`.
+2. Presenter investigates in Splunk using RUM, APM, and host filesystem signals.
+3. Presenter copies the AI Assistant or Troubleshooting Agent summary.
+4. Operator pastes the summary into the operator console.
+5. Operator clicks `Open Incident From Evidence`.
+6. Operator console opens the incident through `POST /remediation/demo/incidents`.
+7. Summary is posted to `POST /remediation/context`.
+8. Orchestrator parses narrative evidence.
+9. Orchestrator enriches missing structured fields when Splunk API endpoints are configured.
+10. Orchestrator builds the final `EvidenceBundle`.
+11. Policy engine determines whether remediation is eligible and which policy mode applies.
+12. Remediation agent evaluates bounded actions.
+13. Operator approves `clean_service_cache`.
+14. Action executes and recovery is verified.
 
 The live detector webhook endpoint, `POST /webhooks/splunk/detector`, remains available as an optional automation path. The core lab does not depend on it.
 
-## Why This Design
+## Why this design
 
 - visible human trust checkpoint
 - clear boundary between evidence and action
-- deterministic policy outside the LLM
-- structured context added even when AI Assistant output is incomplete
+- deterministic policy outside the model
+- bounded toolset for the agent
+- validation after execution

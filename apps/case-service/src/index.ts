@@ -7,9 +7,7 @@ import {
   buildNodeTelemetryConfig,
   buildTelemetryAttributes,
   createServiceLogger,
-  initSplunkNodeTelemetry,
-  recordLatency,
-  recordRequest
+  initSplunkNodeTelemetry
 } from "@ibobs/telemetry";
 
 export const caseService = {
@@ -51,7 +49,6 @@ export function buildServer() {
 
   app.get("/cases/health", async () => ({ status: "ok", service: caseService.name }));
   app.get("/cases/:caseId", async (request) => {
-    const startedAt = performance.now();
     const caseId = (request.params as { caseId: string }).caseId;
     const payload = {
       transaction: BUSINESS_TRANSACTIONS.caseStatusLookup,
@@ -59,14 +56,6 @@ export function buildServer() {
       caseId,
       caseStatus: "Awaiting customer response"
     };
-    recordLatency(performance.now() - startedAt, {
-      ...caseService.telemetry,
-      service: caseService.name
-    });
-    recordRequest({
-      ...caseService.telemetry,
-      service: caseService.name
-    });
     request.log.info({ caseId, payload }, "case lookup served");
     return payload;
   });

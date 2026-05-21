@@ -37,14 +37,14 @@ export class RemediationAgentClient {
       actionId: `action-${Date.now()}`,
       incidentId: payload.incidentId,
       type: payload.recommendedAction as ProposedAction["type"],
-      target: "support_knowledge_v2",
+      target: "support-knowledge-cache",
       confidenceBand: payload.confidenceBand,
       policyMode,
       reasoningSummary: payload.reasoningSummary,
       validationPlan: [
-        "Check Customer Support Response latency",
-        "Check Customer Support Response error rate",
-        "Verify DEA frustration signals drop"
+        "Confirm cache filesystem utilization drops in Infrastructure Monitoring",
+        "Check support-knowledge latency in APM",
+        "Run Customer Support Response validation from the portal"
       ],
       status: "proposed"
     };

@@ -12,6 +12,17 @@ assert SPEC.loader is not None
 SPEC.loader.exec_module(MODULE)
 
 
+def render_context():
+    return {
+        "deployment_environment": "demo",
+        "instance": "student-001",
+        "orchestrator_webhook_url": "https://example.trycloudflare.com/webhooks/splunk/detector",
+        "filesystem_utilization_threshold": "0.85",
+        "apm_latency_threshold_ns": "1800000000",
+        "apm_error_threshold": "0.05",
+    }
+
+
 class SyncSplunkObjectsTests(unittest.TestCase):
     def test_render_template_replaces_placeholders_recursively(self):
         rendered = MODULE.render_template(
@@ -28,17 +39,7 @@ class SyncSplunkObjectsTests(unittest.TestCase):
         )
 
     def test_build_payloads_links_dashboards_to_group_name(self):
-        payloads = MODULE.build_payloads(
-            {
-                "deployment_environment": "demo",
-                "orchestrator_webhook_url": "https://temporary.trycloudflare.com/webhooks/splunk/detector",
-                "customer_support_latency_threshold_ms": "1800",
-                "customer_support_error_threshold": "0.1",
-                "knowledge_search_error_threshold": "2",
-                "remediation_duration_threshold_ms": "120000",
-                "max_affected_transactions": "1",
-            }
-        )
+        payloads = MODULE.build_payloads(render_context())
 
         self.assertEqual(payloads["dashboard_group"]["name"], "IBOBS 2002 Demo")
         self.assertEqual(payloads["dashboards"][0]["dashboardGroupName"], "IBOBS 2002 Demo")
@@ -46,20 +47,10 @@ class SyncSplunkObjectsTests(unittest.TestCase):
         self.assertGreater(len(payloads["detectors"]), 0)
 
     def test_detector_payload_includes_rendered_runbook_url_when_present(self):
-        payloads = MODULE.build_payloads(
-            {
-                "deployment_environment": "demo",
-                "orchestrator_webhook_url": "https://example.trycloudflare.com/webhooks/splunk/detector",
-                "customer_support_latency_threshold_ms": "1800",
-                "customer_support_error_threshold": "0.1",
-                "knowledge_search_error_threshold": "2",
-                "remediation_duration_threshold_ms": "120000",
-                "max_affected_transactions": "1",
-            }
-        )
+        payloads = MODULE.build_payloads(render_context())
 
         latency_detector = next(
-            detector for detector in payloads["detectors"] if detector["key"] == "customer_support_latency"
+            detector for detector in payloads["detectors"] if detector["key"] == "support_knowledge_filesystem_pressure"
         )
         self.assertEqual(
             latency_detector["rule"]["runbookUrl"],
@@ -75,21 +66,11 @@ class SyncSplunkObjectsTests(unittest.TestCase):
             )
 
     def test_apply_payloads_uses_put_for_known_object_ids(self):
-        payloads = MODULE.build_payloads(
-            {
-                "deployment_environment": "demo",
-                "orchestrator_webhook_url": "https://example.trycloudflare.com/webhooks/splunk/detector",
-                "customer_support_latency_threshold_ms": "1800",
-                "customer_support_error_threshold": "0.1",
-                "knowledge_search_error_threshold": "2",
-                "remediation_duration_threshold_ms": "120000",
-                "max_affected_transactions": "1",
-            }
-        )
+        payloads = MODULE.build_payloads(render_context())
         state = {
             "dashboard_group": {"default": {"id": "group-1"}},
             "dashboards": {"executive_story": {"id": "dash-1"}},
-            "detectors": {"customer_support_latency": {"id": "det-1"}},
+            "detectors": {"support_knowledge_filesystem_pressure": {"id": "det-1"}},
         }
         calls = []
 
@@ -110,7 +91,7 @@ class SyncSplunkObjectsTests(unittest.TestCase):
         self.assertEqual(calls[1][0], "PUT")
         self.assertEqual(calls[1][1], "/v2/dashboard/dash-1")
         self.assertEqual(calls[-1][0], "POST")
-        self.assertIn("customer_support_errors", updated_state["detectors"])
+        self.assertIn("support_knowledge_error_rate", updated_state["detectors"])
 
     def test_specs_are_valid_json(self):
         specs_dir = Path(__file__).resolve().parents[1] / "infra" / "splunk" / "specs"

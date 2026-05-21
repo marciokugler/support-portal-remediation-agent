@@ -1,95 +1,52 @@
-resource "signalfx_detector" "customer_support_errors" {
-  name = "IBOBS Customer Support Response Error Rate"
+resource "signalfx_detector" "support_knowledge_filesystem_pressure" {
+  name = "IBOBS Support Knowledge Cache Filesystem Pressure"
 
   program_text = <<-EOF
-    A = data('errors', filter=filter('app.business_transaction', 'customer_support_response')).sum()
-    B = data('requests', filter=filter('app.business_transaction', 'customer_support_response')).sum()
-    C = (A / B).publish(label='A')
-    detect(when(C > ${var.customer_support_error_threshold}, lasting='5m')).publish('Customer Support Response Errors')
+    A = data('system.filesystem.utilization', filter=filter('deployment.environment', '${var.deployment_environment}') and filter('service.instance.id', '${var.instance}') and filter('mountpoint', '${var.cache_mountpoint}')).max().publish(label='Cache Filesystem Utilization')
+    detect(when(A > ${var.filesystem_utilization_threshold}, lasting='2m')).publish('Support Knowledge Cache Filesystem Pressure')
   EOF
 
   rule {
-    detect_label  = "Customer Support Response Errors"
-    severity      = "Major"
-    description   = "Customer Support Response error rate exceeded the allowed threshold."
-    runbook_url   = var.orchestrator_webhook_url
-    notifications = local.detector_webhook_notifications
-  }
-}
-
-resource "signalfx_detector" "customer_support_latency" {
-  name = "IBOBS Customer Support Response Latency"
-
-  program_text = <<-EOF
-    A = data('latency_latest_ms', filter=filter('app.business_transaction', 'customer_support_response') and filter('service', 'support-portal-api') and filter('deployment.environment', '${var.deployment_environment}')).max().publish(label='A')
-    detect(when(A > ${var.customer_support_latency_threshold_ms}, lasting='30s')).publish('Customer Support Response Latency')
-  EOF
-
-  rule {
-    detect_label  = "Customer Support Response Latency"
+    detect_label  = "Support Knowledge Cache Filesystem Pressure"
     severity      = "Critical"
-    description   = "Customer Support Response latency exceeded the allowed threshold."
+    description   = "Out-of-the-box filesystem utilization is above the lab threshold for the support knowledge cache mount."
     runbook_url   = var.orchestrator_webhook_url
     notifications = local.detector_webhook_notifications
   }
 }
 
-resource "signalfx_detector" "knowledge_search_regression" {
-  name = "IBOBS Knowledge Article Search Error Guardrail"
+resource "signalfx_detector" "support_knowledge_latency" {
+  name = "IBOBS Support Knowledge APM Latency"
 
   program_text = <<-EOF
-    A = data('errors', filter=filter('app.business_transaction', 'knowledge_article_search')).sum().publish(label='A')
-    detect(when(A > ${var.knowledge_search_error_threshold}, lasting='3m')).publish('Knowledge Article Search Errors')
+    A = data('service.request.duration.ns', filter=filter('deployment.environment', '${var.deployment_environment}') and filter('service.instance.id', '${var.instance}') and filter('sf_service', 'support-knowledge')).percentile(pct=95).publish(label='P95 Duration')
+    detect(when(A > ${var.apm_latency_threshold_ns}, lasting='2m')).publish('Support Knowledge APM Latency')
   EOF
 
   rule {
-    detect_label = "Knowledge Article Search Errors"
-    severity     = "Major"
-    description  = "Knowledge Article Search errors indicate blast radius expanded beyond the primary workflow."
+    detect_label  = "Support Knowledge APM Latency"
+    severity      = "Major"
+    description   = "Splunk APM service request duration is elevated for the support-knowledge service."
+    runbook_url   = var.orchestrator_webhook_url
+    notifications = local.detector_webhook_notifications
   }
 }
 
-resource "signalfx_detector" "remediation_duration_high" {
-  name = "IBOBS Remediation Duration High"
+resource "signalfx_detector" "support_knowledge_error_rate" {
+  name = "IBOBS Support Knowledge APM Error Rate"
 
   program_text = <<-EOF
-    A = data('remediation_duration_ms', filter=filter('deployment.environment', '${var.deployment_environment}')).mean().publish(label='A')
-    detect(when(A > ${var.remediation_duration_threshold_ms}, lasting='5m')).publish('Remediation Duration High')
+    A = data('service.request', filter=filter('deployment.environment', '${var.deployment_environment}') and filter('service.instance.id', '${var.instance}') and filter('sf_service', 'support-knowledge') and filter('sf_error', 'true')).count()
+    B = data('service.request', filter=filter('deployment.environment', '${var.deployment_environment}') and filter('service.instance.id', '${var.instance}') and filter('sf_service', 'support-knowledge')).count()
+    C = (A / B).publish(label='Error Rate')
+    detect(when(C > ${var.apm_error_threshold}, lasting='2m')).publish('Support Knowledge APM Error Rate')
   EOF
 
   rule {
-    detect_label = "Remediation Duration High"
-    severity     = "Major"
-    description  = "Remediation execution or validation is taking too long."
-  }
-}
-
-resource "signalfx_detector" "remediation_validation_failed" {
-  name = "IBOBS Remediation Validation Failed"
-
-  program_text = <<-EOF
-    A = data('validation_failed', filter=filter('deployment.environment', '${var.deployment_environment}')).publish(label='A')
-    detect(when(A > 0, lasting='1m')).publish('Remediation Validation Failed')
-  EOF
-
-  rule {
-    detect_label = "Remediation Validation Failed"
-    severity     = "Critical"
-    description  = "A remediation action failed validation and requires operator review."
-  }
-}
-
-resource "signalfx_detector" "transaction_blast_radius_guardrail" {
-  name = "IBOBS Blast Radius Guardrail"
-
-  program_text = <<-EOF
-    A = data('affected_transactions_count', filter=filter('deployment.environment', '${var.deployment_environment}')).max().publish(label='A')
-    detect(when(A > ${var.max_affected_transactions}, lasting='2m')).publish('Blast Radius Expanded')
-  EOF
-
-  rule {
-    detect_label = "Blast Radius Expanded"
-    severity     = "Major"
-    description  = "More business transactions are impacted than expected for the demo scenario."
+    detect_label  = "Support Knowledge APM Error Rate"
+    severity      = "Major"
+    description   = "Splunk APM service request error rate is elevated for the support-knowledge service."
+    runbook_url   = var.orchestrator_webhook_url
+    notifications = local.detector_webhook_notifications
   }
 }

@@ -1,9 +1,8 @@
-import { ACTION_TYPES, BLAST_RADIUS, BUSINESS_TRANSACTIONS, type AssistantEvidenceInput } from "@ibobs/shared-types";
+import { ACTION_TYPES, BUSINESS_TRANSACTIONS, type AssistantEvidenceInput } from "@ibobs/shared-types";
 
 export type ParsedAssistantEvidence = {
   likelyCause: string;
   confidenceBand: "low" | "medium" | "high";
-  blastRadius: "low" | "medium" | "high";
   candidateActions: string[];
   inferredTransaction: string;
 };
@@ -53,96 +52,42 @@ function inferCandidateActions(text: string) {
   const actions = new Set<string>();
 
   if (
-    normalized.includes("disable_feature_flag") ||
-    normalized.includes("disable the feature flag") ||
-    normalized.includes("feature flag") ||
-    normalized.includes("support_knowledge_v2")
+    normalized.includes("clean_service_cache") ||
+    normalized.includes("clean service cache") ||
+    normalized.includes("clean the cache") ||
+    normalized.includes("cache cleanup") ||
+    normalized.includes("cache pressure") ||
+    normalized.includes("disk pressure") ||
+    normalized.includes("filesystem pressure") ||
+    normalized.includes("disk utilization")
   ) {
-    actions.add(ACTION_TYPES.disableFeatureFlag);
-  }
-
-  if (normalized.includes("rollback") || normalized.includes("roll back")) {
-    actions.add(ACTION_TYPES.rollbackCanary);
+    actions.add(ACTION_TYPES.cleanServiceCache);
   }
 
   if (normalized.includes("restart")) {
     actions.add(ACTION_TYPES.restartService);
   }
 
-  if (normalized.includes("scale")) {
-    actions.add(ACTION_TYPES.scaleWorkerPool);
-  }
-
   if (actions.size === 0) {
-    actions.add(ACTION_TYPES.disableFeatureFlag);
-  }
-
-  if (actions.has(ACTION_TYPES.rollbackCanary) && !actions.has(ACTION_TYPES.disableFeatureFlag)) {
-    actions.add(ACTION_TYPES.disableFeatureFlag);
+    actions.add(ACTION_TYPES.cleanServiceCache);
   }
 
   const preferredOrder = [
-    ACTION_TYPES.disableFeatureFlag,
-    ACTION_TYPES.rollbackCanary,
-    ACTION_TYPES.restartService,
-    ACTION_TYPES.scaleWorkerPool
+    ACTION_TYPES.cleanServiceCache,
+    ACTION_TYPES.restartService
   ];
 
   return preferredOrder.filter((action) => actions.has(action));
-}
-
-function inferBlastRadius(text: string) {
-  const normalized = text.toLowerCase();
-  const explicitBlastRadius = matchFirst(text, [
-    /blast radius\s*(?:is|:)\s*(low|medium|high)\b/i,
-    /blast radius\s*(?:is|:)\s*([^\n.]+)/i
-  ]);
-  const blastText = explicitBlastRadius?.toLowerCase();
-  const containsWord = (value: string, word: string) => new RegExp(`\\b${word}\\b`, "i").test(value);
-
-  if (blastText && containsWord(blastText, "high")) {
-    return BLAST_RADIUS.high;
-  }
-
-  if (
-    blastText && containsWord(blastText, "low")
-  ) {
-    return BLAST_RADIUS.low;
-  }
-
-  if (blastText && containsWord(blastText, "medium")) {
-    return BLAST_RADIUS.medium;
-  }
-
-  if (normalized.includes("multiple business transactions")) {
-    return BLAST_RADIUS.high;
-  }
-
-  if (
-    normalized.includes("single service only") ||
-    normalized.includes("isolated to one service")
-  ) {
-    return BLAST_RADIUS.low;
-  }
-
-  if (
-    normalized.includes("only one business transaction") ||
-    normalized.includes("limited to the customer_support_response transaction") ||
-    normalized.includes("primarily isolated")
-  ) {
-    return BLAST_RADIUS.medium;
-  }
-
-  return BLAST_RADIUS.medium;
 }
 
 function inferConfidence(text: string) {
   const normalized = text.toLowerCase();
   if (
     normalized.includes("high confidence") ||
-    normalized.includes("feature flag:") ||
-    normalized.includes("release version:") ||
-    normalized.includes("traceid:")
+    normalized.includes("disk utilization") ||
+    normalized.includes("filesystem utilization") ||
+    normalized.includes("traceid:") ||
+    normalized.includes("support-knowledge")
   ) {
     return "high";
   }
@@ -159,8 +104,10 @@ function buildLikelyCauseSummary(text: string) {
     /recent (?:change|changes):\s*([^\n]+)/i,
     /recent change:\s*([^\n]+)/i
   ]);
-  const featureFlag = matchFirst(text, [/feature flag:\s*([^\n]+)/i]);
-  const releaseVersion = matchFirst(text, [/release version:\s*([^\n]+)/i]);
+  const diskSignal = matchFirst(text, [
+    /disk (?:signal|evidence|utilization):\s*([^\n]+)/i,
+    /filesystem (?:signal|evidence|utilization):\s*([^\n]+)/i
+  ]);
   const slowDependency = matchFirst(text, [
     /slow dependencies or services:\s*([^\n]+)/i,
     /service:\s*(support-[^\n]+)/i
@@ -170,7 +117,7 @@ function buildLikelyCauseSummary(text: string) {
     /evidence of latency:\s*([^\n]+)/i
   ]);
 
-  const parts = [recentChange, featureFlag, releaseVersion, slowDependency, latencyEvidence]
+  const parts = [recentChange, diskSignal, slowDependency, latencyEvidence]
     .filter((value): value is string => Boolean(value))
     .map((value) => value.replace(/\s+/g, " ").trim());
 
@@ -182,16 +129,14 @@ function buildLikelyCauseSummary(text: string) {
 }
 
 export function parseAssistantEvidence(input: AssistantEvidenceInput): ParsedAssistantEvidence {
-  const text = input.rawText.trim();
+  const text = (input.rawText ?? input.assistantResponseText ?? "").trim();
   const inferredTransaction = inferTransaction(text);
   const candidateActions = inferCandidateActions(text);
-  const blastRadius = inferBlastRadius(text);
   const confidenceBand = inferConfidence(text);
 
   return {
     likelyCause: buildLikelyCauseSummary(text),
     confidenceBand,
-    blastRadius,
     candidateActions,
     inferredTransaction
   };

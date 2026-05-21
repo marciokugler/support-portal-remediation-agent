@@ -16,15 +16,17 @@ receivers:
       network:
       paging:
       processes:
-  filelog:
-    include:
-      - /workspace/var/log/*.log
-    start_at: end
-    include_file_path: true
-    operators:
-      - type: json_parser
-        parse_from: body
-
+  hostmetrics/cache_volume:
+    collection_interval: 15s
+    scrapers:
+      filesystem:
+        include_mount_points:
+          match_type: strict
+          mount_points:
+            - /var/cache/support-knowledge
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
 processors:
   memory_limiter:
     check_interval: 1s
@@ -45,12 +47,6 @@ exporters:
     traces_endpoint: https://ingest.${SPLUNK_REALM}.signalfx.com/v2/trace/otlp
     headers:
       X-SF-Token: ${SPLUNK_ACCESS_TOKEN}
-  splunk_hec:
-    token: ${SPLUNK_HEC_TOKEN}
-    endpoint: ${SPLUNK_HEC_URL}
-    source: ciscolive26
-    sourcetype: _json
-    index: ${SPLUNK_HEC_INDEX}
   debug:
     verbosity: detailed
 
@@ -68,7 +64,7 @@ service:
       receivers: [hostmetrics]
       processors: [memory_limiter, resourcedetection, batch]
       exporters: [signalfx]
-    logs:
-      receivers: [filelog]
+    metrics/cache_volume:
+      receivers: [hostmetrics/cache_volume]
       processors: [memory_limiter, resourcedetection, batch]
-      exporters: [splunk_hec]
+      exporters: [signalfx]

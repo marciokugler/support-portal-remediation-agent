@@ -9,7 +9,7 @@ The observability design should make it easy to explain:
 - what the user experienced
 - which business transaction degraded
 - which service path is responsible
-- why the orchestrator decided the blast radius was limited
+- why default host, APM, and RUM signals support the remediation decision
 - how the remediation agent was monitored
 
 ## Telemetry Layers
@@ -39,7 +39,8 @@ Business attributes to attach where possible:
 
 - `app.business_transaction`
 - `app.customer_journey`
-- `feature_flag.variant`
+- `app.feature_area`
+- `scenario.id`
 - `session.segment`
 
 ### 2. Backend application services
@@ -102,29 +103,26 @@ Capture:
 
 ## Business Attributes
 
-Index and standardize these for business transactions, MMS, dashboards, and detectors:
+Standardize these low-cardinality attributes for business transactions, dashboards, detector filters, and trace search:
 
 - `app.business_transaction`
 - `app.workflow`
 - `app.customer_journey`
 - `app.feature_area`
-- `feature_flag.name`
-- `feature_flag.variant`
 - `incident.id`
 - `scenario.id`
 - `action.id`
 - `action.type`
 - `action.policy_mode`
-- `blast_radius`
-- `blast_radius.services_count`
-- `blast_radius.transactions_count`
-- `blast_radius.sessions_estimate`
+- `deployment.environment`
+- `service.instance.id`
 
 Low-cardinality rules:
 
 - never put free-form customer input into indexed attributes
 - never put case ids or search strings into indexed dimensions
 - use enums or small value sets for all dashboard/detector dimensions
+- do not create custom application metrics for the incident; use default RUM, APM, and host metrics
 
 ## Business Transactions
 
@@ -140,7 +138,7 @@ This makes the app look like a real system and lets the demo show:
 
 - one degraded transaction
 - two healthy transactions
-- a contained blast radius
+- a contained affected workflow
 
 ### Rule strategy
 
@@ -159,47 +157,39 @@ Example mapping:
 - telemetry value: `customer_support_response`
 - Splunk display: `Customer Support Response`
 
-## Monitoring MetricSets
+## Default Signals
 
-Create custom Monitoring MetricSets using indexed span attributes.
+Build the demo from signals Splunk users already expect to find after instrumenting the app and collector.
 
-Recommended dimensions:
+Primary signals:
 
-- `app.business_transaction`
-- `feature_flag.variant`
-- `action.policy_mode`
-- `blast_radius`
+- RUM page load, route, and fetch timing
+- APM service request count, errors, and duration
+- APM traces for the customer support path
+- host metrics receiver filesystem utilization for the support knowledge cache volume
+- remediation agent spans, tool-call spans, and model-call spans
 
-Use MMS for:
+Use these for:
 
 - transaction latency charts
 - transaction error charts
-- affected-transaction detectors
-- policy mode breakdowns
+- support knowledge latency charts
+- support knowledge filesystem pressure detectors
+- remediation validation status
 
-## Blast Radius Modeling
+## Affected Workflow Modeling
 
-Blast radius is an orchestrator-derived signal.
+The orchestrator should avoid inventing a separate impact score. The live story should stay grounded in the same evidence the presenter can show in Splunk.
 
-Compute it from:
+Summarize:
 
-- number of affected business transactions
-- number of affected services
-- number of impacted RUM sessions
-- action scope
-- whether the issue is customer-facing
+- affected business transaction
+- suspect service
+- host or container volume under pressure
+- confidence band
+- proposed action and validation plan
 
-Values:
-
-- `low`
-- `medium`
-- `high`
-
-Emit as:
-
-- span attributes on orchestrator spans
-- structured log fields
-- custom incident events
+Do not emit custom impact metrics for this. The operator console can display the affected workflow in plain language from the incident evidence.
 
 ## Service Map Expectations
 
@@ -219,7 +209,7 @@ Remediation path:
 
 Action target:
 
-- feature flag service or internal flag module if modeled as a separate service
+- support knowledge cache volume cleanup through the remediation agent tool
 
 ## Dashboards
 
@@ -232,7 +222,7 @@ Charts:
 - affected sessions
 - DEA frustration signal count
 - business transaction status table
-- blast radius
+- affected workflow
 - proposed action
 - validation status
 
@@ -265,7 +255,7 @@ Charts:
 - service map
 - top slow spans
 - suspect dependency latency
-- logs chart for correlated errors
+- support knowledge filesystem utilization
 
 ### 5. Remediation Dashboard
 

@@ -39,7 +39,7 @@ Automate:
 Dashboard requirements:
 
 - use the new dashboard experience when practical
-- include logs-based charts where useful
+- keep the primary incident path metric-driven with RUM, APM, and host filesystem charts
 - use consistent filters for `deployment.environment=demo`
 
 ### Detectors

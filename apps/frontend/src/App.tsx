@@ -37,7 +37,7 @@ const transactionDefinitions = [
   {
     id: "knowledge_article_search",
     name: "Knowledge Article Search",
-    detail: "Search remains available to demonstrate contained blast radius.",
+    detail: "Search remains available while the support response path absorbs the cache pressure incident.",
     icon: BookOpenText
   }
 ];
@@ -46,8 +46,7 @@ type ActionKey =
   | "support"
   | "case"
   | "article"
-  | "latency"
-  | "errors"
+  | "pressure"
   | "reset"
   | "refresh"
   | null;
@@ -246,7 +245,7 @@ export function App() {
   }
 
   async function activateScenario(scenarioId: string) {
-    await runAction(scenarioId === "dependency-latency" ? "latency" : "errors", "Activating scenario", async () => {
+    await runAction("pressure", "Activating cache pressure scenario", async () => {
       const response = await fetch(`${scenarioControllerBaseUrl}/scenario/activate/${scenarioId}`, {
         method: "POST"
       });
@@ -294,19 +293,11 @@ export function App() {
           <div className="command-actions">
             <IconButton
               icon={Zap}
-              onClick={() => activateScenario("dependency-latency")}
+              onClick={() => activateScenario("cache-disk-pressure")}
               disabled={busyAction !== null}
               variant="danger"
             >
-              Trigger Latency
-            </IconButton>
-            <IconButton
-              icon={AlertTriangle}
-              onClick={() => activateScenario("dependency-errors")}
-              disabled={busyAction !== null}
-              variant="danger"
-            >
-              Trigger Errors
+              Trigger Cache Pressure
             </IconButton>
             <IconButton icon={RotateCcw} onClick={resetScenario} disabled={busyAction !== null}>
               Reset
@@ -330,7 +321,7 @@ export function App() {
           <Activity size={20} aria-hidden="true" />
           <div>
             <span>Telemetry surface</span>
-            <strong>RUM, traces, API response</strong>
+            <strong>RUM, APM, host filesystem</strong>
           </div>
         </div>
         <div className="signal-item">
@@ -358,8 +349,8 @@ export function App() {
             </span>
           </div>
           <p className="panel-copy">
-            Ask the AI assistant a support question. When the dependency scenario is active, this transaction
-            demonstrates the degraded journey while adjacent workflows stay healthy.
+            Ask the AI assistant a support question. When the cache pressure scenario is active, this transaction
+            demonstrates the degraded journey while adjacent workflows continue to respond.
           </p>
           <label className="field-label" htmlFor="support-prompt">
             Customer question
@@ -410,7 +401,7 @@ export function App() {
               <BookOpenText size={20} aria-hidden="true" />
               <h3>Knowledge Search</h3>
             </div>
-            <p>Confirm search availability and contained blast radius during the incident.</p>
+            <p>Confirm knowledge search is still callable while the primary support workflow slows down.</p>
             <label className="field-label" htmlFor="article-query">
               Search query
             </label>

@@ -10,9 +10,6 @@ import {
   buildTelemetryAttributes,
   createServiceLogger,
   initSplunkNodeTelemetry,
-  recordError,
-  recordLatency,
-  recordRequest,
   runInSpan
 } from "@ibobs/telemetry";
 
@@ -169,7 +166,6 @@ export function buildServer() {
     request.log.info({ supportRequest: request.body }, "forwarding support request");
     const tracer = trace.getTracer("ibobs-demo");
     return tracer.startActiveSpan("support.gateway.support_request", async (span) => {
-      const startedAt = performance.now();
       annotateCurrentSpan(routes()[0].telemetry);
 
       try {
@@ -183,21 +179,6 @@ export function buildServer() {
           })
         );
         const payload = await downstream.json();
-
-        recordLatency(performance.now() - startedAt, {
-          ...routes()[0].telemetry,
-          service: "support-portal-api"
-        });
-        recordRequest({
-          ...routes()[0].telemetry,
-          service: "support-portal-api"
-        });
-        if (!downstream.ok) {
-          recordError({
-            ...routes()[0].telemetry,
-            service: "support-portal-api"
-          });
-        }
         request.log.info({ downstreamStatus: downstream.status, supportResponse: payload }, "support request completed");
 
         attachServerTimingHeaderForRequest(request, reply, span.spanContext());
@@ -220,7 +201,6 @@ export function buildServer() {
   app.get("/api/cases/:caseId", async (request, reply) => {
     const caseId = (request.params as { caseId: string }).caseId;
     request.log.info({ caseId }, "looking up case");
-    const startedAt = performance.now();
     annotateCurrentSpan({
       ...routes()[1].telemetry,
       "support.case_id": caseId
@@ -229,20 +209,6 @@ export function buildServer() {
       fetch(`${caseServiceBaseUrl}/cases/${encodeURIComponent(caseId)}`)
     );
     const payload = await downstream.json();
-    recordLatency(performance.now() - startedAt, {
-      ...routes()[1].telemetry,
-      service: "support-portal-api"
-    });
-    recordRequest({
-      ...routes()[1].telemetry,
-      service: "support-portal-api"
-    });
-    if (!downstream.ok) {
-      recordError({
-        ...routes()[1].telemetry,
-        service: "support-portal-api"
-      });
-    }
     request.log.info({ caseId, downstreamStatus: downstream.status, casePayload: payload }, "case lookup completed");
     attachServerTimingHeaderForRequest(request, reply, trace.getActiveSpan()?.spanContext());
     reply.code(downstream.status);
@@ -252,7 +218,6 @@ export function buildServer() {
   app.get("/api/articles/search", async (request, reply) => {
     const query = (request.query as { q?: string }).q ?? "";
     request.log.info({ query }, "searching articles");
-    const startedAt = performance.now();
     annotateCurrentSpan({
       ...routes()[2].telemetry,
       "knowledge.query_length": query.length
@@ -270,20 +235,6 @@ export function buildServer() {
       })
     );
     const payload = await downstream.json();
-    recordLatency(performance.now() - startedAt, {
-      ...routes()[2].telemetry,
-      service: "support-portal-api"
-    });
-    recordRequest({
-      ...routes()[2].telemetry,
-      service: "support-portal-api"
-    });
-    if (!downstream.ok) {
-      recordError({
-        ...routes()[2].telemetry,
-        service: "support-portal-api"
-      });
-    }
     request.log.info({ query, downstreamStatus: downstream.status, articlePayload: payload }, "article search completed");
     attachServerTimingHeaderForRequest(request, reply, trace.getActiveSpan()?.spanContext());
     reply.code(downstream.status);

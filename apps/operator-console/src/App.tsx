@@ -9,7 +9,7 @@ import {
   Clock3,
   FileText,
   Gauge,
-  GitBranch,
+  HardDrive,
   KeyRound,
   ListChecks,
   Play,
@@ -24,9 +24,9 @@ import {
 import { currentBrowserAppConfig } from "@ibobs/runtime-config/browser";
 import "./App.css";
 
-const exampleAssistantOutput = `High confidence that support_knowledge_v2 degraded the Customer Support Response transaction.
-Likely blast radius is medium because only one business transaction is materially affected.
-Recommended action: disable_feature_flag.`;
+const exampleAssistantOutput = `High confidence that support-knowledge cache filesystem pressure degraded the Customer Support Response transaction.
+Disk utilization for the cache mount is above threshold and APM shows support-knowledge latency.
+Recommended action: clean_service_cache.`;
 
 type OrchestratorResponse = {
   incident?: {
@@ -35,7 +35,6 @@ type OrchestratorResponse = {
     detectorName?: string;
     status?: string;
     businessTransaction?: string;
-    blastRadius?: string;
     approvedAt?: string;
     executedAt?: string;
     verifiedAt?: string;
@@ -62,7 +61,6 @@ type OrchestratorResponse = {
       affectedTransactions?: string[];
     };
     investigation?: {
-      blastRadius?: string;
       recentChange?: string;
       confidenceBand?: string;
     };
@@ -112,7 +110,6 @@ type StoredIncident = {
   detectorName?: string;
   status?: string;
   businessTransaction?: string;
-  blastRadius?: string;
   approvedAt?: string;
   executedAt?: string;
   verifiedAt?: string;
@@ -134,8 +131,7 @@ type CommandAction =
   | "explain"
   | "propose"
   | "approve"
-  | "latency"
-  | "errors"
+  | "pressure"
   | "reset"
   | null;
 
@@ -293,7 +289,6 @@ export function App() {
             detectorName: hydratedIncident.detectorName,
             status: hydratedIncident.status,
             businessTransaction: hydratedIncident.businessTransaction,
-            blastRadius: hydratedIncident.blastRadius,
             approvedAt: hydratedIncident.approvedAt,
             executedAt: hydratedIncident.executedAt,
             verifiedAt: hydratedIncident.verifiedAt
@@ -329,7 +324,7 @@ export function App() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           detectorId: "det-frontend-demo",
-          detectorName: "Customer Support Response Latency",
+          detectorName: "Support Knowledge Cache Volume Pressure",
           severity: "critical",
           triggeredAt: new Date().toISOString()
         })
@@ -415,7 +410,7 @@ export function App() {
   }
 
   async function activateScenario(scenarioId: string) {
-    await runCommand(scenarioId === "dependency-latency" ? "latency" : "errors", "Activating scenario", async () => {
+    await runCommand("pressure", "Activating cache pressure scenario", async () => {
       const response = await fetch(`${scenarioControllerBaseUrl}/scenario/activate/${scenarioId}`, {
         method: "POST"
       });
@@ -453,7 +448,7 @@ export function App() {
       },
       {
         label: "Evidence package",
-        detail: "AI summary and API enrichment attached",
+        detail: "Splunk evidence and AI summary attached",
         done: Boolean(parsedResult?.evidence || parsedResult?.enrichment),
         icon: FileText
       },
@@ -477,7 +472,7 @@ export function App() {
       },
       {
         label: "Verification",
-        detail: "Scenario recovery and latency validation recorded",
+        detail: "Filesystem pressure and latency recovery validated",
         done: Boolean(parsedResult?.verifyResult?.status || parsedResult?.incident?.verifiedAt),
         icon: BadgeCheck
       }
@@ -540,10 +535,10 @@ export function App() {
           tone={canApprove ? "risk" : "neutral"}
         />
         <MetricTile
-          icon={GitBranch}
-          label="Blast radius"
-          value={parsedResult?.evidence?.investigation?.blastRadius ?? parsedResult?.incident?.blastRadius ?? "unknown"}
-          tone={parsedResult?.evidence?.investigation?.blastRadius ? "action" : "neutral"}
+          icon={HardDrive}
+          label="Suspect signal"
+          value={parsedResult?.evidence?.serviceImpact?.suspectService ?? parsedResult?.enrichment?.suspectService ?? "cache volume"}
+          tone={parsedResult?.evidence?.serviceImpact?.suspectService ? "action" : "neutral"}
         />
         <MetricTile
           icon={Bot}
@@ -616,23 +611,15 @@ export function App() {
               <h2>Scenario Controls</h2>
             </div>
           </div>
-          <p>Trigger the customer-impacting path before incident intake, then reset after verification.</p>
+          <p>Fill the support-knowledge cache volume before incident intake, then clean it during remediation.</p>
           <div className="control-actions">
             <CommandButton
               icon={Zap}
-              onClick={() => activateScenario("dependency-latency")}
+              onClick={() => activateScenario("cache-disk-pressure")}
               disabled={busyAction !== null}
               variant="danger"
             >
-              Trigger Latency
-            </CommandButton>
-            <CommandButton
-              icon={AlertTriangle}
-              onClick={() => activateScenario("dependency-errors")}
-              disabled={busyAction !== null}
-              variant="danger"
-            >
-              Trigger Errors
+              Trigger Cache Pressure
             </CommandButton>
             <CommandButton icon={RotateCcw} onClick={resetScenario} disabled={busyAction !== null}>
               Reset Scenario

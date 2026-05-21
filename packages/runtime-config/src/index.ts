@@ -28,11 +28,11 @@ export function localServiceUrl(
 }
 
 export const defaultPorts = {
-  apiGateway: 4000,
-  assistantService: 4001,
-  caseService: 4002,
-  knowledgeService: 4003,
-  scenarioController: 4004,
-  orchestrator: 4010,
-  remediationAgent: 8000
+  apiGateway: 18100,
+  assistantService: 18101,
+  caseService: 18102,
+  knowledgeService: 18103,
+  scenarioController: 18104,
+  orchestrator: 18110,
+  remediationAgent: 18800
 } as const;

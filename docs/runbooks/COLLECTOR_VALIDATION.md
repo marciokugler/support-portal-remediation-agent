@@ -2,7 +2,7 @@
 
 ## Goal
 
-Prove that traces and custom metrics leave the demo app through the Splunk Distribution of the OpenTelemetry Collector before checking Splunk UI visibility.
+Prove that traces, APM service metrics, RUM data, and host filesystem metrics leave the demo app through the Splunk Distribution of the OpenTelemetry Collector before checking Splunk UI views.
 
 ## Preconditions
 
@@ -10,69 +10,65 @@ Prove that traces and custom metrics leave the demo app through the Splunk Distr
 2. `.env` contains:
    - `SPLUNK_ACCESS_TOKEN`
    - `SPLUNK_REALM`
-   - `OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318`
+   - `INSTANCE`
+   - `OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318`
    - `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf`
 3. Workspace dependencies and the remediation-agent virtual environment are installed.
 
-## Start Order
+## Start order
 
 1. Start the collector:
    ```bash
    npm run dev:collector
    ```
-2. In another terminal, start the local app stack:
+2. In another terminal, start the app stack:
    ```bash
    npm run dev:all
    ```
 
-## Generate Traffic
+## Generate traffic
 
-1. Open the frontend at `http://127.0.0.1:5173`.
-2. Execute all three transactions at least once:
+1. Open the portal at `http://127.0.0.1:18080`.
+2. Execute all three transactions:
    - Customer Support Response
    - Case Status Lookup
    - Knowledge Article Search
-3. Trigger `dependency-latency` from the frontend or operator console.
-4. Re-run Customer Support Response to create degraded traffic.
+3. Trigger `cache-disk-pressure`.
+4. Re-run Customer Support Response.
 5. Create an incident in the operator console and drive the remediation proposal flow.
 
-## What To Look For In Collector Logs
+## What to look for
 
-The collector debug exporter should show:
+APM services:
 
-- traces for:
-  - `support-portal-api`
-  - `support-assistant`
-  - `support-knowledge`
-  - `remediation-orchestrator`
-  - `remediation-agent`
-- custom metrics with names such as:
-  - `latency`
-  - `errors`
-  - `affected_sessions`
-  - `frustration_signals`
-  - `session_replay_candidates`
-  - `incident_opened`
-  - `remediation_actions_proposed`
-  - `remediation_duration_ms`
+- `support-portal-api`
+- `support-assistant`
+- `support-knowledge`
+- `remediation-orchestrator`
+- `remediation-agent`
 
-## If Metrics Do Not Appear
+Metrics:
 
-1. Confirm the app processes started with `.env` loaded.
-2. Confirm the collector is listening on `4318`.
-3. Confirm the app services log normal startup without telemetry initialization errors.
-4. Reproduce traffic after the collector is already running.
-5. If traces appear but metrics do not, inspect the business-transaction metric helper usage in:
-   - `/Users/mkuglerr/code2/codex_projects/ciscolive26/packages/telemetry/src/metrics.ts`
-   - `/Users/mkuglerr/code2/codex_projects/ciscolive26/apps/api-gateway/src/index.ts`
-   - `/Users/mkuglerr/code2/codex_projects/ciscolive26/apps/assistant-service/src/index.ts`
-   - `/Users/mkuglerr/code2/codex_projects/ciscolive26/apps/knowledge-service/src/index.ts`
-   - `/Users/mkuglerr/code2/codex_projects/ciscolive26/apps/remediation-orchestrator/src/index.ts`
+- `service.request`
+- `service.request.duration.ns`
+- `system.filesystem.utilization`
 
-## After Collector Verification
+Browser:
 
-Once the collector clearly shows the expected metrics and traces:
+- RUM application for the support portal, if `VITE_SPLUNK_RUM_TOKEN` is set
+- browser spans with `app.business_transaction`
 
-1. Query Splunk metric metadata again.
-2. Re-test the impact enrichment adapter.
-3. Apply Terraform objects and verify dashboard/detector wiring against live signals.
+## If signals do not appear
+
+1. Confirm app processes started with `.env` loaded.
+2. Confirm the collector host port `14318` is available.
+3. Confirm fresh traffic was generated after the collector was already running.
+4. Confirm `INSTANCE` and `OTEL_RESOURCE_ATTRIBUTES` match the filter you are using in Splunk.
+5. Confirm app services log normal startup without telemetry initialization errors.
+
+## After collector verification
+
+1. Check APM service views.
+2. Check Infrastructure Monitoring filesystem utilization.
+3. Render Splunk objects with `npm run splunk:render`.
+4. Apply dashboards and detectors only after the live signals exist.

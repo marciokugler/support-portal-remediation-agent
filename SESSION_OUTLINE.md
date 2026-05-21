@@ -94,7 +94,7 @@ Agent 1:
 - Splunk AI Assistant
 - correlates telemetry and change context
 - starts from user impact visible in RUM, Digital Experience Analytics, and Session Replay
-- explains likely cause and blast radius
+- explains likely cause and affected workflow
 - produces a remediation-oriented evidence package
 
 Agent 2:
@@ -113,7 +113,7 @@ Use one deterministic scenario with one main remediation path.
 
 Recommended scenario:
 
-- a critical business flow degrades after a bad rollout or feature flag change
+- a critical business flow degrades because the support knowledge cache volume fills up
 - browser users experience elevated latency, hesitation, and failed interactions
 - Splunk RUM, Digital Experience Analytics, and Session Replay expose the end-user impact first
 - business transaction health and service map show the backend path behind the failure
@@ -211,8 +211,8 @@ Then reveal the evidence package:
 - replay of the failing session
 - AI Assistant summary
 - telemetry correlation
-- blast radius
-- recent change
+- affected workflow
+- host filesystem metric evidence
 - confidence band
 - validation plan
 
@@ -227,7 +227,7 @@ Do not reuse a generic workshop app unless it already supports deterministic inc
 - SPA web frontend for the user journey
 - backend API
 - one critical dependency service
-- feature flag or release toggle control
+- cache-pressure scenario control
 - remediation orchestrator service
 - remediation agent service
 - scenario control service for failure injection and reset
@@ -317,8 +317,8 @@ Code responsibilities:
 
 - correlation ids
 - trace propagation
-- structured logs
-- error handling
+- span attributes and error handling
+- request validation
 
 #### 3. `assistant-service`
 
@@ -454,21 +454,20 @@ Views:
 
 ### Required Toolset for the Remediation Agent
 
-- disable feature flag
-- rollback canary
-- scale worker pool
+- clean service cache
 - restart service
 
 Only one of these should be used in the main live flow.
 
 Recommended primary live action:
 
-- `disable_feature_flag`
+- `clean_service_cache`
 
 Why:
 
 - it is visually understandable
 - it is lower risk than restart or scale
+- it maps to a default host filesystem utilization signal in Splunk
 - it fits a bounded-remediation story well
 
 ### Policy Engine Rules
@@ -478,10 +477,9 @@ Keep the policy simple and visible on screen.
 Inputs:
 
 - confidence band
-- blast radius estimate
 - environment
 - action type
-- recent change detected
+- signal evidence present
 
 Outputs:
 
@@ -491,7 +489,7 @@ Outputs:
 
 Default rules:
 
-- production plus medium or higher blast radius => `approval_required`
+- production plus a customer-facing remediation action => `approval_required`
 - low confidence => `recommend_only`
 - non-production and high confidence for a known-safe action => `auto_execute`
 
@@ -533,14 +531,14 @@ Recommended data:
 - affected services and suspect service path
 - current latency and error rate for the business transaction
 - representative trace or span context for the failing path
-- service map neighborhood for blast-radius inference
+- service map neighborhood for affected-path evidence
 - RUM and DEA summary metrics for impacted sessions
 - session replay identifier or link if available
 
 Use orchestrator-owned metadata for:
 
-- recent feature flag change
-- canary state
+- known scenario state
+- expected action target
 - known-safe remediation actions
 
 Do not depend on the orchestrator pulling every part of the story from Splunk APIs. The AI Assistant summary should fill the human-readable gap, and the APIs should fill the structured-data gap.
@@ -609,7 +607,7 @@ Track:
 - DEA frustration signals and key user interactions
 - traces across the business flow
 - service latency and error metrics
-- logs with incident and action identifiers
+- host filesystem utilization metrics
 - agent task execution spans
 - tool calls
 - tool latency
@@ -719,7 +717,7 @@ Most important shape:
 type ProposedAction = {
   actionId: string;
   incidentId: string;
-  type: "disable_feature_flag" | "rollback_canary" | "scale_worker_pool" | "restart_service";
+  type: "clean_service_cache" | "restart_service";
   target: string;
   confidenceBand: "low" | "medium" | "high";
   policyMode: "recommend_only" | "approval_required" | "auto_execute";

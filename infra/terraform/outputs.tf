@@ -37,35 +37,20 @@ output "dashboards" {
 
 output "detectors" {
   value = {
-    customer_support_latency = {
-      id   = signalfx_detector.customer_support_latency.id
-      name = signalfx_detector.customer_support_latency.name
-      url  = signalfx_detector.customer_support_latency.url
+    support_knowledge_filesystem_pressure = {
+      id   = signalfx_detector.support_knowledge_filesystem_pressure.id
+      name = signalfx_detector.support_knowledge_filesystem_pressure.name
+      url  = signalfx_detector.support_knowledge_filesystem_pressure.url
     }
-    customer_support_errors = {
-      id   = signalfx_detector.customer_support_errors.id
-      name = signalfx_detector.customer_support_errors.name
-      url  = signalfx_detector.customer_support_errors.url
+    support_knowledge_latency = {
+      id   = signalfx_detector.support_knowledge_latency.id
+      name = signalfx_detector.support_knowledge_latency.name
+      url  = signalfx_detector.support_knowledge_latency.url
     }
-    knowledge_search_regression = {
-      id   = signalfx_detector.knowledge_search_regression.id
-      name = signalfx_detector.knowledge_search_regression.name
-      url  = signalfx_detector.knowledge_search_regression.url
-    }
-    remediation_duration_high = {
-      id   = signalfx_detector.remediation_duration_high.id
-      name = signalfx_detector.remediation_duration_high.name
-      url  = signalfx_detector.remediation_duration_high.url
-    }
-    remediation_validation_failed = {
-      id   = signalfx_detector.remediation_validation_failed.id
-      name = signalfx_detector.remediation_validation_failed.name
-      url  = signalfx_detector.remediation_validation_failed.url
-    }
-    blast_radius_guardrail = {
-      id   = signalfx_detector.transaction_blast_radius_guardrail.id
-      name = signalfx_detector.transaction_blast_radius_guardrail.name
-      url  = signalfx_detector.transaction_blast_radius_guardrail.url
+    support_knowledge_error_rate = {
+      id   = signalfx_detector.support_knowledge_error_rate.id
+      name = signalfx_detector.support_knowledge_error_rate.name
+      url  = signalfx_detector.support_knowledge_error_rate.url
     }
   }
 }

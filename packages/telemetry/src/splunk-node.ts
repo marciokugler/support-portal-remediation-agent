@@ -41,7 +41,7 @@ export function initSplunkNodeTelemetry(serviceName: string) {
     tracing: true,
     metrics: true,
     profiling: process.env.SPLUNK_PROFILER_ENABLED === "true",
-    logging: true
+    logging: false
   };
 
   if (endpoint) {

@@ -52,7 +52,7 @@ Marcio:
 
 Leila:
 
-"The second shift is operational complexity. These AI experiences are not single systems. They depend on models, tools, data sources, APIs, feature flags, and service dependencies. So the risk surface gets wider."
+"The second shift is operational complexity. These AI experiences are not single systems. They depend on models, tools, data sources, APIs, cache volumes, and service dependencies. So the risk surface gets wider."
 
 "And the third shift is visibility. Customers increasingly want to start with the real digital experience: what happened in the browser, where users hesitated, where they abandoned, and what the actual session looked like."
 
@@ -82,7 +82,7 @@ Marcio:
 
 "Let me start with a situation that is becoming very common. A company launches an AI-powered support portal. The business loves it because it reduces pressure on human agents, it improves self-service, and it gives customers faster answers at any hour."
 
-"Then one day, during a high-volume period, response times jump. Some answers come back slowly. Some fail entirely. Internally, the teams eventually see alerts, traces, and logs. But the customer does not see telemetry. The customer only sees a broken experience."
+"Then one day, during a high-volume period, response times jump. Some answers come back slowly. Some fail entirely. Internally, the teams eventually see alerts, traces, and infrastructure metrics. But the customer does not see telemetry. The customer only sees a broken experience."
 
 "And that is the operational shift we want to talk about today. Once AI is in the customer journey, operational issues become trust issues immediately."
 
@@ -174,7 +174,7 @@ Marcio:
 
 "And importantly, this is not a one-workflow app. It has multiple business transactions. Customers can ask for help, check case status, and search knowledge content. That matters because in production, not everything breaks at once."
 
-"Now we introduce a change. It could be a dependency issue. It could be a bad feature flag. It could be a service behavior change in the knowledge layer behind the portal."
+"Now we introduce pressure in the dependency path. In this demo, the support knowledge cache volume fills up, which is the kind of operational issue students can inspect with out-of-the-box infrastructure and APM signals."
 
 "The result is simple: customers start waiting longer, some requests fail, and confidence in the experience starts to drop."
 
@@ -232,13 +232,13 @@ Leila:
 
 "Then the remediation agent, which we are instrumenting as a Python agent so we can observe it clearly, evaluates a bounded set of actions. It is not allowed to do anything it wants. It has a small, visible toolset and a policy model."
 
-"It proposes an action. In our primary path, that action is to disable the feature flag associated with the degraded path."
+"It proposes an action. In our primary path, that action is to clean the support knowledge cache volume associated with the degraded path."
 
 "Now we ask the governance question: should this be recommend only, approval required, or auto-execute? In a customer-facing production scenario like this, the default answer is approval required."
 
 Marcio:
 
-"And that is the moment we want the audience to focus on. The value is not just that the system found a likely action. The value is that the team can review the action with evidence, confidence, and clear blast radius."
+"And that is the moment we want the audience to focus on. The value is not just that the system found a likely action. The value is that the team can review the action with evidence, confidence, and a validation plan they can verify in Splunk."
 
 Leila:
 
@@ -266,7 +266,7 @@ Speaker first: Marcio
 
 Exact audience question:
 
-"If you were the incident owner in this moment, what would you want the system to do first: rollback, scale, or disable the feature?"
+"If you were the incident owner in this moment, what would you want the system to do first: clean the cache, restart the service, or scale the service?"
 
 Marcio:
 
@@ -302,7 +302,7 @@ Exact audience question:
 
 Leila:
 
-"Usually the answers are some combination of confidence, impact, recent change, blast radius, and validation plan."
+"Usually the answers are some combination of confidence, customer impact, service evidence, filesystem metrics, and validation plan."
 
 "That is exactly the point. Customers do not want black-box action. They want explainable action, and they want it connected all the way back to the customer session that triggered the investigation."
 

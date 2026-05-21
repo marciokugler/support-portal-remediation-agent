@@ -20,7 +20,7 @@ The app is an AI-powered support portal with three business transactions:
 - `Case Status Lookup`
 - `Knowledge Article Search`
 
-Only `Customer Support Response` is intentionally affected by the live incident. The other two remain healthy so the demo can show how business transactions, endpoint grouping, and dashboards isolate the blast radius.
+Only `Customer Support Response` is intentionally affected by the live incident. The other two remain healthy so the demo can show how business transactions, endpoint grouping, and dashboards isolate the affected workflow.
 
 ## Service Architecture
 
@@ -50,7 +50,7 @@ Technology:
 Responsibilities:
 
 - root server entrypoint
-- trace and log correlation
+- trace and metric correlation
 - stable root spans for each business transaction
 - routing to downstream services
 
@@ -110,7 +110,7 @@ Responsibilities:
 - receive Splunk webhook alerts
 - accept pasted AI Assistant or Troubleshooting Agent context
 - enrich with targeted Splunk API calls
-- compute blast radius and policy mode
+- compute policy mode from confidence, environment, and approved action scope
 - call remediation agent
 - store incident and action state
 
@@ -155,7 +155,7 @@ Responsibilities:
 - show current incident
 - paste AI Assistant summary
 - show enriched evidence
-- show blast radius and policy
+- show policy, approval state, and validation evidence
 - approve action
 - reset demo
 
@@ -181,8 +181,8 @@ Recommended root span attributes:
 - `app.business_transaction`
 - `app.workflow`
 - `app.customer_journey`
-- `feature_flag.name`
-- `feature_flag.variant`
+- `app.feature_area`
+- `scenario.id`
 - `deployment.environment`
 
 Recommended values:
@@ -207,16 +207,17 @@ If request parameters are introduced later, grouping should prevent endpoint exp
 
 Primary incident:
 
-- enable or change a feature flag that routes `Customer Support Response` through a degraded knowledge path
+- fill the cache volume used by the support knowledge service
 - `Customer Support Response` latency and errors rise
 - `Case Status Lookup` stays healthy
-- `Knowledge Article Search` stays healthy or only lightly degraded
+- `Knowledge Article Search` stays healthy because it does not exercise the same retrieval path in the staged flow
 
-This creates a visible, explainable blast radius:
+This creates a visible, explainable signal chain:
 
-- customer-facing
-- limited to one major business transaction
-- bounded remediation action available
+- customer-facing degradation in RUM and business transactions
+- backend latency in APM on the support knowledge path
+- filesystem pressure in Infrastructure Monitoring from collector host metrics
+- a bounded `clean_service_cache` remediation action
 
 ## API Contracts
 
@@ -245,7 +246,7 @@ This creates a visible, explainable blast radius:
 - use a monorepo
 - define shared types once
 - use strict TypeScript
-- use structured logs everywhere
+- make traces and default metrics the primary demo evidence
 - keep all IDs explicit: `trace_id`, `incident_id`, `scenario_id`, `action_id`
 - emit low-cardinality business attributes on root spans
 - keep remediation tools tiny and explicit
@@ -273,7 +274,6 @@ ciscolive26/
     telemetry/
     evidence-parser/
     policy-engine/
-    feature-flags/
   infra/
     docker/
     terraform/
