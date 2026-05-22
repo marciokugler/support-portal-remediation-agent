@@ -18,7 +18,7 @@ DEFAULT_CONTEXT = {
     "deployment_environment": os.getenv("DEPLOYMENT_ENVIRONMENT", "demo"),
     "instance": os.getenv("INSTANCE", "student-001"),
     "orchestrator_webhook_url": os.getenv("ORCHESTRATOR_PUBLIC_WEBHOOK_URL", ""),
-    "filesystem_utilization_threshold": os.getenv("FILESYSTEM_UTILIZATION_THRESHOLD", "0.85"),
+    "filesystem_utilization_threshold": os.getenv("FILESYSTEM_UTILIZATION_THRESHOLD", "85"),
     "cache_mountpoint": os.getenv("SPLUNK_CACHE_MOUNTPOINT", "/var/cache/claims-knowledge"),
     "apm_latency_threshold_ns": os.getenv("APM_LATENCY_THRESHOLD_NS", "1800000000"),
     "apm_error_threshold": os.getenv("APM_ERROR_THRESHOLD", "0.05"),

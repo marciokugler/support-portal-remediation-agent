@@ -106,8 +106,17 @@ Check locally first:
 Look for:
 
 - APM services such as `claims-knowledge`, `claims-assistant`, and `remediation-agent`
-- host filesystem metric `system.filesystem.utilization`
+- host filesystem metric `disk.utilization`
 - RUM data for the portal if `VITE_SPLUNK_RUM_TOKEN` is set
+
+If the APM trace waterfall shows `Infrastructure (0)`:
+
+1. generate fresh AI Claim Status traffic
+2. wait for the collector log line `Updated dimension` with `claims-knowledge` and `method":"PUT"`
+3. open the `claims-knowledge` service view or service map
+4. use Infrastructure Monitoring filtered to the student `INSTANCE` and mountpoint `/var/cache/claims-knowledge`
+
+The trace waterfall can outlive Splunk's current service-to-host related-content relation. The collector is configured with a longer `stale_service_timeout` for the workshop, but the reliable presenter path is still APM service view plus Infrastructure Monitoring.
 
 If RUM sessions are missing:
 

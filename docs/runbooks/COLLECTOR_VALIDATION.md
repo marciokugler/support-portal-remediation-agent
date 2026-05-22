@@ -51,7 +51,7 @@ Metrics:
 
 - `service.request`
 - `service.request.duration.ns`
-- `system.filesystem.utilization`
+- `disk.utilization`
 
 Browser:
 
@@ -72,3 +72,22 @@ Browser:
 2. Check Infrastructure Monitoring filesystem utilization.
 3. Render Splunk objects with `npm run splunk:render`.
 4. Apply dashboards and detectors only after the live signals exist.
+
+## Related Infrastructure validation
+
+The collector sends service-to-host related-content updates through the SignalFx exporter. For the workshop, `stale_service_timeout` is set long enough for a presenter to pause on a trace and still navigate to infrastructure.
+
+Use these checks before trusting the UI:
+
+```bash
+docker logs --since 10m docker-splunk-otel-collector-1 2>&1 \
+  | grep -E 'Updated dimension.*claims-knowledge.*PUT|Detected host resource ID'
+```
+
+Expected:
+
+- host resource ID is `host.name=$INSTANCE`
+- `claims-knowledge` is updated with `method":"PUT"`
+- `disk.utilization` is visible for mountpoint `/var/cache/claims-knowledge`
+
+If the trace waterfall still shows `Infrastructure (0)`, use the APM service view or Infrastructure Monitoring filtered to `$INSTANCE`. The trace can remain visible after the current service-to-host relation has aged out.

@@ -66,9 +66,10 @@ Keep this simple for students:
 
 1. In RUM or Digital Experience, open the claims portal application and confirm page or network activity if browser data is available.
 2. In APM, open the service map or service list and find `claims-knowledge`.
-3. In Infrastructure Monitoring, filter to the student `INSTANCE`.
-4. Inspect filesystem utilization for `/var/cache/claims-knowledge`.
-5. Use APM and Infrastructure as the required proof path; keep `Policy Coverage Lookup` and `Claims FAQ Search` visible as healthy comparisons.
+3. Open the `claims-knowledge` service view before using related infrastructure. The trace waterfall can keep showing an old trace after service-to-host correlation has aged out.
+4. In Infrastructure Monitoring, filter to the student `INSTANCE`.
+5. Inspect filesystem utilization for `/var/cache/claims-knowledge`.
+6. Use APM and Infrastructure as the required proof path; keep `Policy Coverage Lookup` and `Claims FAQ Search` visible as healthy comparisons.
 
 Narrate:
 

@@ -89,7 +89,7 @@ In Splunk Observability:
 
 Signals to look for:
 
-- `system.filesystem.utilization`
+- `disk.utilization`
 - `service.request.duration.ns`
 - `service.request`
 - RUM/browser spans for the portal journey

@@ -45,7 +45,7 @@ variable "existing_webhook_credential_id" {
 
 variable "filesystem_utilization_threshold" {
   type    = number
-  default = 0.85
+  default = 85
 }
 
 variable "cache_mountpoint" {

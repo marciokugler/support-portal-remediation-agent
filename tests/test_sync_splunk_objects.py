@@ -17,7 +17,7 @@ def render_context():
         "deployment_environment": "demo",
         "instance": "student-001",
         "orchestrator_webhook_url": "https://example.trycloudflare.com/webhooks/splunk/detector",
-        "filesystem_utilization_threshold": "0.85",
+        "filesystem_utilization_threshold": "85",
         "apm_latency_threshold_ns": "1800000000",
         "apm_error_threshold": "0.05",
     }

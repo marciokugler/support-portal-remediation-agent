@@ -2,14 +2,14 @@ resource "signalfx_detector" "claims_knowledge_filesystem_pressure" {
   name = "IBOBS Claims Knowledge Cache Filesystem Pressure"
 
   program_text = <<-EOF
-    A = data('system.filesystem.utilization', filter=filter('deployment.environment', '${var.deployment_environment}') and filter('service.instance.id', '${var.instance}') and filter('mountpoint', '${var.cache_mountpoint}')).max().publish(label='Cache Filesystem Utilization')
+    A = data('disk.utilization', filter=filter('deployment.environment', '${var.deployment_environment}') and filter('host.name', '${var.instance}') and filter('mountpoint', '${var.cache_mountpoint}')).max().publish(label='Cache Filesystem Utilization')
     detect(when(A > ${var.filesystem_utilization_threshold}, lasting='2m')).publish('Claims Knowledge Cache Filesystem Pressure')
   EOF
 
   rule {
     detect_label  = "Claims Knowledge Cache Filesystem Pressure"
     severity      = "Critical"
-    description   = "Out-of-the-box filesystem utilization is above the lab threshold for the claims knowledge cache mount."
+    description   = "Out-of-the-box disk utilization is above the lab threshold for the claims knowledge cache mount."
     runbook_url   = var.orchestrator_webhook_url
     notifications = local.detector_webhook_notifications
   }

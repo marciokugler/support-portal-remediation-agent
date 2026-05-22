@@ -22,7 +22,7 @@ The preferred authoring path for dashboard and detector iteration is [infra/splu
 
 The current Terraform config uses out-of-the-box Splunk Observability signals:
 
-- `system.filesystem.utilization`
+- `disk.utilization`
 - `service.request`
 - `service.request.duration.ns`
 

@@ -33,7 +33,7 @@ resource "signalfx_single_value_chart" "student_filesystem_utilization" {
   name = "Claims Knowledge Cache Filesystem Utilization"
 
   program_text = <<-EOF
-    A = data('system.filesystem.utilization', filter=filter('deployment.environment', '${var.deployment_environment}') and filter('service.instance.id', '${var.instance}') and filter('mountpoint', '${var.cache_mountpoint}')).max().publish(label='Cache Filesystem Utilization')
+    A = data('disk.utilization', filter=filter('deployment.environment', '${var.deployment_environment}') and filter('host.name', '${var.instance}') and filter('mountpoint', '${var.cache_mountpoint}')).max().publish(label='Cache Filesystem Utilization')
   EOF
 }
 
@@ -120,7 +120,7 @@ resource "signalfx_time_chart" "host_filesystem_utilization" {
   name = "Claims Knowledge Cache Filesystem Utilization"
 
   program_text = <<-EOF
-    A = data('system.filesystem.utilization', filter=filter('deployment.environment', '${var.deployment_environment}') and filter('service.instance.id', '${var.instance}') and filter('mountpoint', '${var.cache_mountpoint}')).max().publish(label='Cache Filesystem Utilization')
+    A = data('disk.utilization', filter=filter('deployment.environment', '${var.deployment_environment}') and filter('host.name', '${var.instance}') and filter('mountpoint', '${var.cache_mountpoint}')).max().publish(label='Cache Filesystem Utilization')
   EOF
 }
 

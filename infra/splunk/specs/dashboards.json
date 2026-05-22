@@ -13,7 +13,7 @@
       {
         "name": "Claims Knowledge Cache Filesystem Utilization",
         "type": "single_value",
-        "programText": "A = data('system.filesystem.utilization', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('service.instance.id', '{{instance}}') and filter('mountpoint', '{{cache_mountpoint}}')).max().publish(label='Cache Filesystem Utilization')",
+        "programText": "A = data('disk.utilization', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('host.name', '{{instance}}') and filter('mountpoint', '{{cache_mountpoint}}')).max().publish(label='Cache Filesystem Utilization')",
         "grid": { "width": 6, "height": 1, "row": 0, "column": 6 }
       }
     ]
@@ -76,7 +76,7 @@
       {
         "name": "Claims Knowledge Cache Filesystem Utilization",
         "type": "time",
-        "programText": "A = data('system.filesystem.utilization', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('service.instance.id', '{{instance}}') and filter('mountpoint', '{{cache_mountpoint}}')).max().publish(label='Cache Filesystem Utilization')",
+        "programText": "A = data('disk.utilization', filter=filter('deployment.environment', '{{deployment_environment}}') and filter('host.name', '{{instance}}') and filter('mountpoint', '{{cache_mountpoint}}')).max().publish(label='Cache Filesystem Utilization')",
         "grid": { "width": 12, "height": 1, "row": 1, "column": 0 }
       }
     ]

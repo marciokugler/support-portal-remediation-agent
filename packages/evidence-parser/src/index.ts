@@ -101,13 +101,35 @@ function inferCandidateActions(text: string) {
 
 function inferConfidence(text: string) {
   const normalized = text.toLowerCase();
+  const explicitConfidence = matchFirst(text, [
+    /confidence:\s*(low|medium|high)\b/i,
+    /\b(low|medium|high)\s+confidence\b/i
+  ]);
+
+  if (explicitConfidence) {
+    return explicitConfidence.toLowerCase() as "low" | "medium" | "high";
+  }
+
   if (
-    normalized.includes("high confidence") ||
-    normalized.includes("disk utilization") ||
-    normalized.includes("filesystem utilization") ||
+    normalized.includes("no disk.utilization") ||
+    normalized.includes("no disk utilization") ||
+    normalized.includes("no filesystem") ||
+    normalized.includes("could not be confirmed") ||
+    normalized.includes("unavailable") ||
+    normalized.includes("empty result set") ||
+    normalized.includes("query timeout") ||
+    normalized.includes("insufficient signal")
+  ) {
+    return "low";
+  }
+
+  if (
+    /(?:disk|filesystem) utilization[^.\n]*(?:above|elevated|high|pressure|threshold|9\d|8[5-9])/.test(normalized) ||
     normalized.includes("traceid:") ||
-    normalized.includes("claims-knowledge") ||
-    normalized.includes("support-knowledge")
+    normalized.includes("latency is elevated") ||
+    normalized.includes("cache filesystem pressure") ||
+    ((normalized.includes("claims-knowledge") || normalized.includes("support-knowledge")) &&
+      (normalized.includes("clean_claims_knowledge_cache") || normalized.includes("clean_service_cache")))
   ) {
     return "high";
   }
@@ -119,7 +141,14 @@ function inferConfidence(text: string) {
   return "medium";
 }
 
+function isNegativeEvidence(value: string) {
+  return /\b(?:no|not|unavailable|insufficient|empty result set|could not be confirmed|cannot provide|timed? out|timeout)\b/i.test(value);
+}
+
 function buildLikelyCauseSummary(text: string) {
+  const likelyCause = matchFirst(text, [
+    /likely cause:\s*([^\n]+)/i
+  ]);
   const recentChange = matchFirst(text, [
     /recent (?:change|changes):\s*([^\n]+)/i,
     /recent change:\s*([^\n]+)/i
@@ -130,19 +159,24 @@ function buildLikelyCauseSummary(text: string) {
   ]);
   const slowDependency = matchFirst(text, [
     /slow dependencies or services:\s*([^\n]+)/i,
-    /service:\s*((?:claims|support)-[^\n]+)/i
+    /(?:^|\n)service:\s*((?:claims|support)-[^\n]+)/i
   ]);
   const latencyEvidence = matchFirst(text, [
     /latency evidence:\s*([^\n]+)/i,
     /evidence of latency:\s*([^\n]+)/i
   ]);
 
-  const parts = [recentChange, diskSignal, slowDependency, latencyEvidence]
+  const parts = [likelyCause, recentChange, diskSignal, slowDependency, latencyEvidence]
     .filter((value): value is string => Boolean(value))
     .map((value) => value.replace(/\s+/g, " ").trim());
+  const positiveParts = parts.filter((value) => !isNegativeEvidence(value));
 
-  if (parts.length > 0) {
-    return parts.join(" | ");
+  if (positiveParts.length > 0) {
+    return positiveParts.join(" | ");
+  }
+
+  if (parts.length > 0 || isNegativeEvidence(text)) {
+    return "Splunk AI did not confirm filesystem or APM evidence; keep remediation recommendation-only until signals are verified.";
   }
 
   return text.trim() || "AI Assistant summary pending.";

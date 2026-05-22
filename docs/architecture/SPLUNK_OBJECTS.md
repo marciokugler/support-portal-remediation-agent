@@ -19,7 +19,7 @@
 
 Use default Splunk Observability signals:
 
-- `system.filesystem.utilization`
+- `disk.utilization`
 - `service.request`
 - `service.request.duration.ns`
 - RUM and browser spans

@@ -57,3 +57,24 @@ Recommended action: clean_service_cache.`
   assert.equal(parsed.confidenceBand, "high");
   assert.deepEqual(parsed.candidateActions, [ACTION_TYPES.cleanServiceCache]);
 });
+
+test("parseAssistantEvidence honors explicit low confidence from Splunk AI", () => {
+  const parsed = parseAssistantEvidence({
+    source: "splunk_ai_assistant",
+    rawText: `Confidence: low
+Affected journey: AI Claim Status
+Suspect service: claims-knowledge
+Filesystem signal: No disk.utilization time series matched filters for mountpoint=/var/cache/claims-knowledge on student-001 in the last -15m to now (empty result set), so filesystem evidence could not be confirmed from Metric Finder execution.
+APM evidence: Unavailable due to APM query timeout, so I cannot provide latency/error evidence for claims-knowledge from APM signals right now.
+Likely cause: Insufficient signal retrieval.
+Recommended action: clean_claims_knowledge_cache.`
+  });
+
+  assert.equal(parsed.inferredTransaction, BUSINESS_TRANSACTIONS.customerSupportResponse);
+  assert.equal(parsed.confidenceBand, "low");
+  assert.deepEqual(parsed.candidateActions, [ACTION_TYPES.cleanServiceCache]);
+  assert.equal(
+    parsed.likelyCause,
+    "Splunk AI did not confirm filesystem or APM evidence; keep remediation recommendation-only until signals are verified."
+  );
+});
