@@ -33,9 +33,26 @@ processors:
     limit_mib: 512
   batch:
   resourcedetection:
-    detectors: [system, env]
+    detectors: [env, system]
     timeout: 2s
     override: false
+  resource/lab_identity:
+    attributes:
+      - action: upsert
+        key: deployment.environment
+        value: ${DEPLOYMENT_ENVIRONMENT}
+      - action: upsert
+        key: service.instance.id
+        value: ${INSTANCE}
+      - action: upsert
+        key: host.name
+        value: ${INSTANCE}
+      - action: upsert
+        key: lab.name
+        value: ciscolive26
+      - action: upsert
+        key: lab.student.id
+        value: ${INSTANCE}
 
 exporters:
   signalfx:
@@ -54,17 +71,17 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, resourcedetection, batch]
+      processors: [memory_limiter, resourcedetection, resource/lab_identity, batch]
       exporters: [otlphttp/traces]
     metrics:
       receivers: [otlp]
-      processors: [memory_limiter, resourcedetection, batch]
+      processors: [memory_limiter, resourcedetection, resource/lab_identity, batch]
       exporters: [signalfx]
     metrics/infrastructure:
       receivers: [hostmetrics]
-      processors: [memory_limiter, resourcedetection, batch]
+      processors: [memory_limiter, resourcedetection, resource/lab_identity, batch]
       exporters: [signalfx]
     metrics/cache_volume:
       receivers: [hostmetrics/cache_volume]
-      processors: [memory_limiter, resourcedetection, batch]
+      processors: [memory_limiter, resourcedetection, resource/lab_identity, batch]
       exporters: [signalfx]

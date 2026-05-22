@@ -80,7 +80,7 @@ services:
       SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
       DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
       INSTANCE: ${INSTANCE:-student-001}
-      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001,deployment.environment=demo}
       OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -114,7 +114,7 @@ services:
       SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
       DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
       INSTANCE: ${INSTANCE:-student-001}
-      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001,deployment.environment=demo}
       OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -143,7 +143,7 @@ services:
       SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
       DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
       INSTANCE: ${INSTANCE:-student-001}
-      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001,deployment.environment=demo}
       OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -168,7 +168,7 @@ services:
       SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
       DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
       INSTANCE: ${INSTANCE:-student-001}
-      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001,deployment.environment=demo}
       OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -198,7 +198,7 @@ services:
       SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
       DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
       INSTANCE: ${INSTANCE:-student-001}
-      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001,deployment.environment=demo}
       OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -229,7 +229,7 @@ services:
       SPLUNK_API_BASE_URL: ${SPLUNK_API_BASE_URL:-https://api.us1.signalfx.com}
       DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
       INSTANCE: ${INSTANCE:-student-001}
-      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001,deployment.environment=demo}
       OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -263,7 +263,7 @@ services:
       SPLUNK_ACCESS_TOKEN: ${SPLUNK_ACCESS_TOKEN:-}
       DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-demo}
       INSTANCE: ${INSTANCE:-student-001}
-      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-lab.name=ciscolive26,lab.student.id=student-001,service.instance.id=student-001,host.name=student-001,deployment.environment=demo}
       OTEL_SERVICE_NAMESPACE: ${OTEL_SERVICE_NAMESPACE:-ibobs2002}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://splunk-otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf

@@ -119,7 +119,10 @@ def init_agent_telemetry(app) -> bool:
         return False
 
     os.environ.setdefault("OTEL_SERVICE_NAME", service_name)
-    os.environ.setdefault("OTEL_RESOURCE_ATTRIBUTES", build_resource_attributes())
+    os.environ["OTEL_RESOURCE_ATTRIBUTES"] = merge_resource_attributes(
+        os.getenv("OTEL_RESOURCE_ATTRIBUTES"),
+        build_resource_attributes(),
+    )
     otlp_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
     os.environ.setdefault(
         "OTEL_EXPORTER_OTLP_ENDPOINT",
@@ -148,6 +151,25 @@ def build_resource_attributes() -> str:
             f"app.version={app_version}",
         ]
     )
+
+
+def merge_resource_attributes(existing: str | None, required: str) -> str:
+    attributes: dict[str, str] = {}
+    order: list[str] = []
+
+    for group in (existing, required):
+        if not group:
+            continue
+        for item in group.split(","):
+            key, separator, value = item.partition("=")
+            key = key.strip()
+            if not key or not separator:
+                continue
+            if key not in attributes:
+                order.append(key)
+            attributes[key] = value.strip()
+
+    return ",".join(f"{key}={attributes[key]}" for key in order)
 
 
 def annotate_current_span(attributes: dict[str, str]) -> None:
